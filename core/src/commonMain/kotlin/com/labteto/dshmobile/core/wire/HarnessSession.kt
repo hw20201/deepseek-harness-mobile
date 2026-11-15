@@ -12,8 +12,12 @@ sealed class SessionExchange {
      *
      * Almost always a token from an earlier harness process: the token rotates on every start and
      * is never persisted, so a startup URL copied yesterday is simply not the current one.
+     *
+     * [proxyRefused] is the exception: the reverse proxy in front of the harness answered 401
+     * with a `WWW-Authenticate: Basic` challenge, so the harness never saw the token at all and
+     * the proxy username or password is what is wrong — not the token.
      */
-    data class Refused(val status: Int) : SessionExchange()
+    data class Refused(val status: Int, val proxyRefused: Boolean = false) : SessionExchange()
 
     /** The exchange never reached a harness. */
     data class Unreachable(val kind: TransportFailure, val message: String?) : SessionExchange()
@@ -49,18 +53,25 @@ object HarnessSession {
      * whole call exists to read. [http] is a [PlainHttp], which never follows one. On the JVM the
      * same call takes an `OkHttpClient` (`HarnessSession.exchange(baseUrl, token, client)` in
      * `HarnessSessionOkHttp.kt`), so the Android app keeps handing over the client it has.
+     *
+     * [authorization] is the reverse proxy's Basic credential, when the harness sits behind one:
+     * the exchange is an ordinary GET to the proxy first, and without it the proxy answers 401
+     * before the harness ever sees the token. It is the same header the unary transport and the
+     * mux upgrade carry; the harness itself reads nothing from it.
      */
     suspend fun exchange(
         baseUrl: String,
         token: String,
         http: PlainHttp,
         timeoutMs: Long = 10_000,
+        authorization: String? = null,
     ): SessionExchange {
         val url = resolveHarnessWireUrl(baseUrl, "/").withQueryParameter("token", token)
         // The body is never read: the answer is in the status and the headers.
         val request = PlainHttpRequest(
             method = "GET",
             url = url.text,
+            headers = if (authorization != null) listOf("Authorization" to authorization) else emptyList(),
             connectTimeoutMs = timeoutMs,
             readTimeoutMs = timeoutMs,
             readBody = false,
@@ -68,7 +79,14 @@ object HarnessSession {
         return try {
             val response = http.execute(request)
             val cookie = cookieOf(response.headers("Set-Cookie"))
-            if (cookie != null) SessionExchange.Granted(cookie) else SessionExchange.Refused(response.status)
+            if (cookie != null) {
+                SessionExchange.Granted(cookie)
+            } else {
+                SessionExchange.Refused(
+                    response.status,
+                    proxyRefused = isBasicAuthChallenge(response.headers("WWW-Authenticate").firstOrNull()),
+                )
+            }
         } catch (e: IOException) {
             SessionExchange.Unreachable(TransportFailures.classify(e), e.message)
         }

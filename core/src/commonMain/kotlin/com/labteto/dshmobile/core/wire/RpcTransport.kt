@@ -40,6 +40,15 @@ class RpcTransportException(
      * rather than retrying immediately.
      */
     val retryAfterSeconds: Long? = null,
+    /**
+     * The `WWW-Authenticate` challenge the peer sent with a 401, when it sent one.
+     *
+     * A harness answers 401 bare — its session is a cookie, not an HTTP credential — while a
+     * reverse proxy doing Basic auth answers 401 with `WWW-Authenticate: Basic`. The two refusals
+     * need opposite instructions, so the challenge rides along instead of being dropped with the
+     * headers; see [TransportFailures.classify] and [isBasicAuthChallenge].
+     */
+    val wwwAuthenticate: String? = null,
 ) : IOException(message, cause)
 
 /** The HTTP carrier for unary RPCs: one `POST /api/<path>` exchange. */

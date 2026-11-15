@@ -49,6 +49,18 @@ class OkHttpRpcTransport(
     writeTimeoutMs: Long = 30_000,
     private val authorization: String? = null,
     private val cookie: String? = null,
+    /**
+     * The reverse proxy's Basic credential (`Authorization: Basic …`), when the harness sits
+     * behind one.
+     *
+     * Deliberately a second slot rather than a second value for [authorization]: that one is the
+     * relay's Bearer token, and a request carries exactly one `Authorization` header. A relay host
+     * never has a proxy credential and a direct host never has a bearer token, so at most one of
+     * the two is ever set — but when both somehow are, the relay's wins, because the bearer is
+     * the credential the endpoint in front was paired with. Applied before [authorization] for
+     * exactly that reason: [Request.Builder.header] replaces, so the later call wins.
+     */
+    private val proxyAuthorization: String? = null,
 ) : RpcTransport {
 
     private val base: HttpUrl = baseUrl.toHttpUrl()
@@ -68,6 +80,7 @@ class OkHttpRpcTransport(
                 .url(target)
                 .header("Host", hostHeader)
                 .header("Content-Type", "application/json")
+                .authorized(proxyAuthorization)
                 .authorized(authorization)
                 .cookied(cookie)
                 .post(body.toRequestBody(JSON_MEDIA_TYPE))
@@ -105,11 +118,13 @@ class OkHttpRpcTransport(
                         if (resp.isSuccessful) {
                             continuation.resume(RpcHttpResponse(resp.code, responseBody, contentType))
                         } else {
+                            val wwwAuthenticate = resp.header("WWW-Authenticate")
                             continuation.resumeWithException(
                                 RpcTransportException(
                                     resp.code,
-                                    carrierMessage(resp.code, responseBody),
+                                    carrierMessage(resp.code, responseBody, wwwAuthenticate),
                                     retryAfterSeconds = retryAfterSecondsOf(resp),
+                                    wwwAuthenticate = wwwAuthenticate,
                                 ),
                             )
                         }
@@ -138,6 +153,7 @@ class OkHttpRpcTransport(
         val request = Request.Builder()
             .url(target)
             .header("Host", hostHeader)
+            .authorized(proxyAuthorization)
             .authorized(authorization)
             .cookied(cookie)
             .get()
@@ -148,7 +164,14 @@ class OkHttpRpcTransport(
             throw RpcTransportException(0, "transport failure: ${e.message}", e)
         }
         response.use { resp ->
-            if (!resp.isSuccessful) throw RpcTransportException(resp.code, carrierMessage(resp.code))
+            if (!resp.isSuccessful) {
+                val wwwAuthenticate = resp.header("WWW-Authenticate")
+                throw RpcTransportException(
+                    resp.code,
+                    carrierMessage(resp.code, null, wwwAuthenticate),
+                    wwwAuthenticate = wwwAuthenticate,
+                )
+            }
             val body = resp.body
                 ?: throw RpcTransportException(resp.code, "download carried no body")
             // A live view of the response stream, not a copy: `asSource()` pulls from the
@@ -199,6 +222,7 @@ class OkHttpRpcTransport(
         val request = Request.Builder()
             .url(target)
             .header("Host", hostHeader)
+            .authorized(proxyAuthorization)
             .authorized(authorization)
             .cookied(cookie)
             .post(requestBody)
@@ -210,7 +234,14 @@ class OkHttpRpcTransport(
         }
         response.use { resp ->
             val responseBody = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) throw RpcTransportException(resp.code, carrierMessage(resp.code))
+            if (!resp.isSuccessful) {
+                val wwwAuthenticate = resp.header("WWW-Authenticate")
+                throw RpcTransportException(
+                    resp.code,
+                    carrierMessage(resp.code, null, wwwAuthenticate),
+                    wwwAuthenticate = wwwAuthenticate,
+                )
+            }
             RpcHttpResponse(resp.code, responseBody)
         }
     }

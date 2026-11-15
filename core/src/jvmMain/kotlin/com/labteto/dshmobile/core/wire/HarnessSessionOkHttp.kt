@@ -12,4 +12,5 @@ suspend fun HarnessSession.exchange(
     token: String,
     client: OkHttpClient,
     timeoutMs: Long = 10_000,
-): SessionExchange = exchange(baseUrl, token, OkHttpPlainHttp(client), timeoutMs)
+    authorization: String? = null,
+): SessionExchange = exchange(baseUrl, token, OkHttpPlainHttp(client), timeoutMs, authorization)

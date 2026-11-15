@@ -78,6 +78,11 @@ class KtorRpcTransport(
     readTimeoutMs: Long = 30_000,
     private val authorization: String? = null,
     private val cookie: String? = null,
+    /**
+     * The reverse proxy's Basic credential. A second slot, as on [OkHttpRpcTransport]: one
+     * `Authorization` header per request, the relay's Bearer wins when both are somehow set.
+     */
+    private val proxyAuthorization: String? = null,
 ) : RpcTransport {
 
     private val endpoint = HarnessEndpoint.of(baseUrl)
@@ -119,10 +124,12 @@ class KtorRpcTransport(
         // The body is saved, so reading it again as text is a decode, not a second read.
         val text = response.bodyAsText()
         if (success) return RpcHttpResponse(status, text, contentType)
+        val wwwAuthenticate = response.headers[HttpHeaders.WWWAuthenticate]
         throw RpcTransportException(
             status,
-            carrierMessage(status, text),
+            carrierMessage(status, text, wwwAuthenticate),
             retryAfterSeconds = retryAfterSecondsOf(response.headers[HttpHeaders.RetryAfter]),
+            wwwAuthenticate = wwwAuthenticate,
         )
     }
 
@@ -138,7 +145,14 @@ class KtorRpcTransport(
             carrier(passThrough = { it === consumerFailure }) {
                 client.prepareGet { carrierRequest(target, connectTimeout, DOWNLOAD_IDLE_MS) }.execute { response ->
                     val status = response.status.value
-                    if (status !in 200..299) throw RpcTransportException(status, carrierMessage(status))
+                    if (status !in 200..299) {
+                        val wwwAuthenticate = response.headers[HttpHeaders.WWWAuthenticate]
+                        throw RpcTransportException(
+                            status,
+                            carrierMessage(status, null, wwwAuthenticate),
+                            wwwAuthenticate = wwwAuthenticate,
+                        )
+                    }
                     // A live view of the response channel, not a copy: reads pull from the
                     // connection as `consume` makes them, and leaving this block releases it.
                     val source = ChannelSource(response.bodyAsChannel(), response.expectedBodyLength(checkBodyLength)).buffered()
@@ -175,7 +189,14 @@ class KtorRpcTransport(
             }
             val status = response.status.value
             val text = response.bodyAsText()
-            if (status !in 200..299) throw RpcTransportException(status, carrierMessage(status))
+            if (status !in 200..299) {
+                val wwwAuthenticate = response.headers[HttpHeaders.WWWAuthenticate]
+                throw RpcTransportException(
+                    status,
+                    carrierMessage(status, null, wwwAuthenticate),
+                    wwwAuthenticate = wwwAuthenticate,
+                )
+            }
             RpcHttpResponse(status, text)
         }
     }
@@ -183,6 +204,7 @@ class KtorRpcTransport(
     private fun HttpRequestBuilder.carrierRequest(target: String, connectMs: Long, socketMs: Long) {
         url(target)
         header(HttpHeaders.Host, endpoint.hostHeader)
+        if (proxyAuthorization != null) header(HttpHeaders.Authorization, proxyAuthorization)
         if (authorization != null) header(HttpHeaders.Authorization, authorization)
         if (cookie != null) header(HttpHeaders.Cookie, cookie)
         timeout {

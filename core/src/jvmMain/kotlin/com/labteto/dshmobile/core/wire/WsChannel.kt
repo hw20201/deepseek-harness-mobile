@@ -25,6 +25,11 @@ import okhttp3.WebSocketListener
  * handshake, and against a direct 0.1.2 harness the browser-session cookie is required here too —
  * a missing credential costs the entire connection generation rather than one call.
  *
+ * [proxyAuthorization] is the reverse proxy's Basic credential, a second slot for the same reason
+ * it is one on [OkHttpRpcTransport]: a request carries one `Authorization` header, a relay host
+ * never has a proxy credential and a direct host never has a bearer token, and when both somehow
+ * are set the relay's wins.
+ *
  * Open so a test can stand in for the socket without touching the network; the mux sees only the
  * [MuxSocket] contract either way.
  */
@@ -34,6 +39,7 @@ open class WsChannel(
     private val sink: WsChannelSink,
     private val authorization: String? = null,
     private val cookie: String? = null,
+    private val proxyAuthorization: String? = null,
 ) : MuxSocket {
     @Volatile
     private var webSocket: WebSocket? = null
@@ -62,7 +68,13 @@ open class WsChannel(
             // apart from 403 (Host/Origin refused), which now mean different things.
             sink.onClosed(
                 if (response != null) {
-                    RpcTransportException(response.code, carrierMessage(response.code), t)
+                    val wwwAuthenticate = response.header("WWW-Authenticate")
+                    RpcTransportException(
+                        response.code,
+                        carrierMessage(response.code, null, wwwAuthenticate),
+                        t,
+                        wwwAuthenticate = wwwAuthenticate,
+                    )
                 } else {
                     t
                 },
@@ -76,6 +88,7 @@ open class WsChannel(
         started = true
         val request = Request.Builder()
             .url(url)
+            .authorized(proxyAuthorization)
             .authorized(authorization)
             .cookied(cookie)
             .build()

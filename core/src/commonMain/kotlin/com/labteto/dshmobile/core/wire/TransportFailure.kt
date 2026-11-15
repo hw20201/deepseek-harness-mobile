@@ -45,6 +45,17 @@ enum class TransportFailure {
      */
     UNAUTHENTICATED,
 
+    /**
+     * HTTP 401 carrying a `WWW-Authenticate: Basic` challenge: the reverse proxy in front of the
+     * harness refused the proxy username or password.
+     *
+     * Distinct from [UNAUTHENTICATED] because the remedy is opposite. A bare 401 means the
+     * address was fine and this client never exchanged a launch token; this one means the harness
+     * never saw the request, and the fix is the proxy credential typed into the connect form —
+     * not a launch token, which the proxy would still refuse before the harness could read it.
+     */
+    PROXY_UNAUTHENTICATED,
+
     /** HTTP 404: no route claimed the path; the build does not compose that service. */
     NOT_FOUND,
 
@@ -126,7 +137,11 @@ object TransportFailures {
 
     /** Classify a carrier exception: HTTP status first, then the underlying I/O cause. */
     fun classify(e: RpcTransportException): TransportFailure = when (e.status) {
-        401 -> TransportFailure.UNAUTHENTICATED
+        // A 401 with a Basic challenge is the reverse proxy's refusal, not the harness's: the
+        // harness answers 401 bare, and the proxy is the only thing in front of it that issues
+        // a `WWW-Authenticate: Basic`. See [isBasicAuthChallenge].
+        401 -> if (isBasicAuthChallenge(e.wwwAuthenticate)) TransportFailure.PROXY_UNAUTHENTICATED
+            else TransportFailure.UNAUTHENTICATED
         403 -> TransportFailure.TRUST_FENCE
         404 -> TransportFailure.NOT_FOUND
         413 -> TransportFailure.TOO_LARGE

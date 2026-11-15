@@ -99,6 +99,8 @@ class KtorMuxSocket(
     private val authorization: String? = null,
     private val cookie: String? = null,
     connectTimeoutMs: Long = 30_000,
+    /** The reverse proxy's Basic credential; a second slot, as on [KtorRpcTransport]. */
+    private val proxyAuthorization: String? = null,
 ) : MuxSocket {
 
     private val hostHeader: String
@@ -156,6 +158,7 @@ class KtorMuxSocket(
             client.prepareGet {
                 url(target)
                 header(HttpHeaders.Host, hostHeader)
+                if (proxyAuthorization != null) header(HttpHeaders.Authorization, proxyAuthorization)
                 if (authorization != null) header(HttpHeaders.Authorization, authorization)
                 if (cookie != null) header(HttpHeaders.Cookie, cookie)
                 timeout {
@@ -168,7 +171,14 @@ class KtorMuxSocket(
                 val status = response.status.value
                 // Judged on the status rather than on the exception the WebSocket plugin would
                 // raise, whose only record of it is English text.
-                if (status != HTTP_SWITCHING_PROTOCOLS) throw RpcTransportException(status, carrierMessage(status))
+                if (status != HTTP_SWITCHING_PROTOCOLS) {
+                    val wwwAuthenticate = response.headers[HttpHeaders.WWWAuthenticate]
+                    throw RpcTransportException(
+                        status,
+                        carrierMessage(status, null, wwwAuthenticate),
+                        wwwAuthenticate = wwwAuthenticate,
+                    )
+                }
                 val session = response.body<DefaultClientWebSocketSession>()
                 sink.onOpen()
                 failure = pump(session)

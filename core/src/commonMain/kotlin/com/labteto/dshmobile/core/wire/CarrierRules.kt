@@ -54,18 +54,33 @@ internal fun isMultipartContentType(contentType: String?): Boolean =
     contentType?.trimStart()?.startsWith("multipart/", ignoreCase = true) == true
 
 /**
+ * Whether a 401's `WWW-Authenticate` challenge is a Basic one — the mark of a reverse proxy
+ * (nginx, Caddy) demanding a username and password, rather than the harness demanding a browser
+ * session. The harness never issues a challenge: its session is a cookie obtained by exchanging a
+ * launch token, so a bare 401 is its answer and a Basic-challenged one is the proxy's.
+ */
+internal fun isBasicAuthChallenge(wwwAuthenticate: String?): Boolean =
+    wwwAuthenticate?.trim()?.startsWith("Basic", ignoreCase = true) == true
+
+/**
  * Carrier-layer failure text; 403 names the trust fence because that is the usual cause.
  *
  * Shared so the WebSocket path can wrap a failed upgrade in the same shape as a failed POST — a
  * fence rejection of `/api/remote.mux` is the same fact as one on `/api/host.describe`.
  */
-internal fun carrierMessage(status: Int, body: String? = null): String = when (status) {
+internal fun carrierMessage(status: Int, body: String? = null, wwwAuthenticate: String? = null): String = when (status) {
     // Since 0.1.2 these are two different facts and the connect screen has to say which. 403 is
     // the Host/Origin fence, which runs first and is about *where* the request came from. 401 is
     // the browser session, which is about *who* is asking — a harness that would answer happily
     // if this client had exchanged a launch token. Collapsing them sends people to reconfigure a
-    // firewall when they actually need to re-pair.
-    401 -> "harness has no browser session for this client (HTTP 401)"
+    // firewall when they actually need to re-pair. A 401 that *does* carry a Basic challenge is a
+    // third fact: the reverse proxy in front of the harness refused the proxy username or
+    // password, and the harness never saw the request at all.
+    401 -> if (isBasicAuthChallenge(wwwAuthenticate)) {
+        "reverse proxy refused the proxy username or password (HTTP 401)"
+    } else {
+        "harness has no browser session for this client (HTTP 401)"
+    }
     // The harness caps a request body (300 MiB by default) and answers 413 rather than reading it.
     // Saying so beats "not a harness", which is what this used to read as: the address was right
     // and the attachment was too big.
