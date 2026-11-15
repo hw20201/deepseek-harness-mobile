@@ -1818,20 +1818,22 @@ private fun ProviderAddDialog(
         }
     }
 
-    fun validationError(): String? = when (mode) {
-        ProviderAddMode.CLAIM -> {
-            if (claimRow == null) null else endpointError(protocol, baseUrl)
-        }
-        ProviderAddMode.CUSTOM -> {
-            val trimmedRoute = route.trim()
-            if (!isValidRouteId(trimmedRoute)) return routeHint
-            if (providers.rows.any { it.provider == trimmedRoute } ||
-                providers.claimable.any { it.provider == trimmedRoute }
-            ) {
-                return routeTaken
+    fun validationError(): String? {
+        return when (mode) {
+            ProviderAddMode.CLAIM -> {
+                if (claimRow == null) null else endpointError(protocol, baseUrl)
             }
-            if (baseUrl.isBlank()) return endpointHint
-            endpointError(api, baseUrl) ?: if (pickedModels.isEmpty()) noModels else null
+            ProviderAddMode.CUSTOM -> {
+                val trimmedRoute = route.trim()
+                if (!isValidRouteId(trimmedRoute)) return routeHint
+                if (providers.rows.any { it.provider == trimmedRoute } ||
+                    providers.claimable.any { it.provider == trimmedRoute }
+                ) {
+                    return routeTaken
+                }
+                if (baseUrl.isBlank()) return endpointHint
+                endpointError(api, baseUrl) ?: if (pickedModels.isEmpty()) noModels else null
+            }
         }
     }
 
