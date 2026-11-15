@@ -165,8 +165,11 @@ class HostsStore @Inject constructor(
             relayTokenExpiresAt = relay?.tokenExpiresAt ?: existing?.relayTokenExpiresAt ?: 0L,
         )
         upsertHost(config)
-        if (proxyPassword != null && config.proxyUsername != null) {
-            proxyCredentials.put(config.id, config.proxyUsername, proxyPassword)
+        // A local copy: smart cast cannot see through a public property of a record from
+        // another module, and the username is what decides whether there is a pair to store.
+        val proxyUser = config.proxyUsername
+        if (proxyPassword != null && proxyUser != null) {
+            proxyCredentials.put(config.id, proxyUser, proxyPassword)
         }
         return config
     }
