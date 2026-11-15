@@ -456,8 +456,10 @@ private fun ConnectForm(
 
                     // The subnet sweep needs the device's own addresses and, on iOS, the Local Network
                     // permission and a way to enumerate interfaces; until a platform has them the section
-                    // is not shown at all rather than shown broken.
-                    if (!modeLoopback && features.discovery) {
+                    // is not shown at all rather than shown broken. Discovery is a relay-mode surface
+                    // only: a reverse-proxy user never has a harness on the local subnet, so the sweep
+                    // (and its empty hint) is dead weight on the LAN tab. Relay keeps it.
+                    if (mode == ConnectMode.RELAY && features.discovery) {
                         DiscoveredSection(
                             relayMode = modeRelay,
                             state = state,
