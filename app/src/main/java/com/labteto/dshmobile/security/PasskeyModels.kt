@@ -84,8 +84,8 @@ fun buildCreateRequestJson(
         }
         put("challenge", challengeBase64Url)
         putJsonArray("pubKeyCredParams") {
-            addJsonObject { put("type", "public-key"); put("alg", -7) }
-            addJsonObject { put("type", "public-key"); put("alg", -257) }
+            add(buildJsonObject { put("type", "public-key"); put("alg", -7) })
+            add(buildJsonObject { put("type", "public-key"); put("alg", -257) })
         }
         put("timeout", 60_000)
         putJsonObject("authenticatorSelection") {
@@ -97,11 +97,11 @@ fun buildCreateRequestJson(
         if (excludeCredentialIds.isNotEmpty()) {
             putJsonArray("excludeCredentials") {
                 excludeCredentialIds.forEach { id ->
-                    addJsonObject {
+                    add(buildJsonObject {
                         put("type", "public-key")
                         put("id", id)
                         putJsonArray("transports") { add(JsonPrimitive("internal")) }
-                    }
+                    })
                 }
             }
         }
@@ -123,11 +123,11 @@ fun buildGetRequestJson(
         if (allowCredentialIds.isNotEmpty()) {
             putJsonArray("allowCredentials") {
                 allowCredentialIds.forEach { id ->
-                    addJsonObject {
+                    add(buildJsonObject {
                         put("type", "public-key")
                         put("id", id)
                         putJsonArray("transports") { add(JsonPrimitive("internal")) }
-                    }
+                    })
                 }
             }
         }

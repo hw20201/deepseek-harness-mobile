@@ -2,6 +2,7 @@ package com.labteto.dshmobile.security
 
 import android.app.Activity
 import androidx.credentials.CreatePublicKeyCredentialRequest
+import androidx.credentials.CreatePublicKeyCredentialResponse
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPublicKeyCredentialOption
@@ -127,14 +128,16 @@ class PasskeyManager @Inject constructor(
                 excludeCredentialIds = begin.excludeCredentialIds,
             )
             val manager = CredentialManager.create(activity)
+            // 1.3.0 takes the Activity as the Context, first, and answers with a
+            // CreateCredentialResponse whose concrete type carries the JSON.
             val response = try {
-                manager.createCredential(CreatePublicKeyCredentialRequest(requestJson), activity)
+                manager.createCredential(activity, CreatePublicKeyCredentialRequest(requestJson))
             } catch (e: CreateCredentialCancellationException) {
                 return PasskeyOutcome.Cancelled
             } catch (e: CreateCredentialException) {
                 return PasskeyOutcome.Failed(e.message ?: "passkey registration failed")
             }
-            val credential = response.data as? PublicKeyCredential
+            val credential = response as? CreatePublicKeyCredentialResponse
                 ?: return PasskeyOutcome.Failed("authenticator did not return a passkey credential")
             val attestation = parseCreateResponseJson(credential.registrationResponseJson)
                 ?: return PasskeyOutcome.Failed("authenticator answer was not a passkey attestation")
@@ -182,8 +185,8 @@ class PasskeyManager @Inject constructor(
             val manager = CredentialManager.create(activity)
             val response = try {
                 manager.getCredential(
-                    GetCredentialRequest(listOf(GetPublicKeyCredentialOption(requestJson))),
                     activity,
+                    GetCredentialRequest(listOf(GetPublicKeyCredentialOption(requestJson))),
                 )
             } catch (e: GetCredentialCancellationException) {
                 return PasskeyOutcome.Cancelled
