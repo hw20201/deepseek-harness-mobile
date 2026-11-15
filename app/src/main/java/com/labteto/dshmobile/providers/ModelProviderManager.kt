@@ -139,11 +139,14 @@ sealed interface DiscoverOutcome {
  * appear there without a reconnect.
  *
  * The wire comes from a provider lambda (bound in `AppModule` to the live client), so
- * tests can hand the manager a fake wire without a connection.
+ * tests can hand the manager a fake wire without a connection. The annotation is
+ * load-bearing: `Function0` declares its result covariant, so without it Dagger
+ * reads the injection site as `Function0<? extends ProviderWire>` and cannot match
+ * the `Function0<ProviderWire>` the module provides.
  */
 @Singleton
 class ModelProviderManager @Inject constructor(
-    private val wireProvider: () -> ProviderWire?,
+    private val wireProvider: @JvmSuppressWildcards () -> ProviderWire?,
 ) {
     private val _state = MutableStateFlow(ProvidersUiState())
     val state: StateFlow<ProvidersUiState> = _state.asStateFlow()

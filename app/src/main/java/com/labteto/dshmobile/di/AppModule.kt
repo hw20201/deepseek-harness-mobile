@@ -79,8 +79,12 @@ object AppModule {
     /**
      * The live provider wire, or null while disconnected. A lambda rather than a
      * binding: the client belongs to the current connection, not to the app.
+     * The annotation matches the injection site: without it Dagger reads the
+     * provider as `Function0<ProviderWire>` and the injection site as
+     * `Function0<? extends ProviderWire>`, and the binding goes missing.
      */
     @Provides
+    @JvmSuppressWildcards
     fun provideProviderWire(
         connectionManager: ConnectionManager,
         wireFactory: ProviderWireFactory,
