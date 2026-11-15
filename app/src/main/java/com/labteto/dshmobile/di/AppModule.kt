@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.labteto.dshmobile.connection.HarnessSessionStore
+import com.labteto.dshmobile.connection.ProxyCredentialStore
 import com.labteto.dshmobile.core.wire.WireJson
+import com.labteto.dshmobile.security.PasskeyGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,6 +37,25 @@ object AppModule {
         .writeTimeout(30, TimeUnit.SECONDS)
         .pingInterval(20, TimeUnit.SECONDS)
         .build()
+
+    /**
+     * The passkey / content-encryption gateway: the HTTP client plus the two credential
+     * lookups, bound as lambdas so the gateway itself stays unit-testable without a
+     * DataStore. See `docs/dsh-mobile-passkey-and-encryption-server.md` for the server
+     * component these calls speak to (not installed yet — every call answers 404 until
+     * it is, and the app treats that as "not installed", not as a failure).
+     */
+    @Provides
+    @Singleton
+    fun providePasskeyGateway(
+        http: OkHttpClient,
+        proxyCredentials: ProxyCredentialStore,
+        sessionStore: HarnessSessionStore,
+    ): PasskeyGateway = PasskeyGateway(
+        http,
+        proxyAuthorization = { hostId -> proxyCredentials.authorization(hostId) },
+        sessionCookie = { hostId -> sessionStore.cookie(hostId) },
+    )
 
     @Provides
     @Singleton

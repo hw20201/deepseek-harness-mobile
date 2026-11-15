@@ -46,6 +46,8 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Settings
@@ -148,7 +150,40 @@ import kotlinx.coroutines.launch
 internal const val WORKSPACE_PREVIEW_LIMIT = 5
 
 /** The quick filters above the list. */
-private enum class DrawerFilter { All, Running, NeedsYou, Archived }
+private enum class DrawerFilter { All, Running, NeedsYou, Archived, Hidden }
+
+/**
+ * The drawer's three buckets, as one pure function so the rule is testable without Compose.
+ *
+ * A session is hidden, archived, or listable — in that precedence, since a session can only
+ * be deliberately put in one of the two side lists at a time. Blank sessions are scratch
+ * space the harness reuses: they are listable nowhere, and only appear in a side list when
+ * they were explicitly hidden or archived there. Hidden is phone-local (see
+ * [com.labteto.dshmobile.connection.HostsStore.hiddenSessions]); archived is harness state.
+ */
+internal data class DrawerSessionSplit(
+    val listable: List<SessionRow>,
+    val archived: List<SessionRow>,
+    val hidden: List<SessionRow>,
+)
+
+internal fun splitDrawerSessions(
+    sessions: List<SessionRow>,
+    hiddenIds: Set<String>,
+    archivedIds: Set<String>,
+): DrawerSessionSplit {
+    val listable = mutableListOf<SessionRow>()
+    val archived = mutableListOf<SessionRow>()
+    val hidden = mutableListOf<SessionRow>()
+    for (session in sessions) {
+        when {
+            session.sessionId in hiddenIds -> hidden.add(session)
+            session.sessionId in archivedIds -> archived.add(session)
+            !session.blank -> listable.add(session)
+        }
+    }
+    return DrawerSessionSplit(listable, archived, hidden)
+}
 
 /**
  * The sessions drawer: the Ink redesign's "Sessions" screen.
@@ -208,6 +243,10 @@ fun ChatListDrawer(
     // Per-host, per-phone state the harness has no place for: the order of sessions that belong to no
     // workspace, and which project headers the reader folded shut.
     val hostKey = connection.host?.let { "${it.baseUrl}|${it.id}" }
+    // Phone-local hides, per host: the fish's sessions, the spike test, anything that is not
+    // a development task and should not be in the way. See HostsStore.hiddenSessions.
+    val hiddenIds by remember(hostKey) { hostsStore.hiddenSessions(hostKey) }
+        .collectAsStateWithLifecycle(initialValue = emptySet())
     val savedUngrouped by remember(hostKey) { hostsStore.ungroupedOrder(hostKey) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     // What the reader just arranged, shown until the saved copy catches up so a drop never flickers.
@@ -306,9 +345,11 @@ fun ChatListDrawer(
 
     // Blank sessions are scratch space the harness reuses; subagent transcripts belong under their
     // parent, not as top-level rows.
-    val listable = sessions.filter { it.sessionId !in archivedIds && !it.blank }
+    val split = remember(sessions, hiddenIds, archivedIds) { splitDrawerSessions(sessions, hiddenIds, archivedIds) }
+    val listable = split.listable
     val sessionsById = sessions.associateBy { it.sessionId }
-    val archivedSessions = sessions.filter { it.sessionId in archivedIds }
+    val archivedSessions = split.archived
+    val hiddenSessions = split.hidden
 
     // Subagents nest under the session that spawned them. `origin` is the discriminator, not
     // `parentSessionId` — an ordinary fork sets a parent too, and a fork is a session in its own
@@ -626,6 +667,11 @@ fun ChatListDrawer(
                     selected = filter == DrawerFilter.Archived,
                     onClick = { filter = DrawerFilter.Archived },
                 )
+                DsFilterChip(
+                    label = stringResource(R.string.chatlist_hidden),
+                    selected = filter == DrawerFilter.Hidden,
+                    onClick = { filter = DrawerFilter.Hidden },
+                )
             }
             ReorderHint(visible = reorder.active, text = hintShown, pressing = reorder.atBoundary)
         }
@@ -779,6 +825,49 @@ fun ChatListDrawer(
                     return@LazyColumn
                 }
 
+                if (filter == DrawerFilter.Hidden) {
+                    item(key = "hidden-header") {
+                        DateHeading(stringResource(R.string.chatlist_hidden), Modifier.padding(top = DsSpacing.xsmall))
+                    }
+                    if (hiddenSessions.isEmpty()) {
+                        item(key = "hidden-empty") {
+                            // Nothing hidden is its own state, not "nothing matches": there is no
+                            // query on this list for anything to have failed to match.
+                            Text(
+                                stringResource(R.string.chatlist_hidden_none),
+                                style = DsType.std14,
+                                color = colors.labelTertiary,
+                                modifier = Modifier.padding(vertical = DsSpacing.small),
+                            )
+                        }
+                    }
+                    itemsIndexed(
+                        hiddenSessions.sortedByDescending(SessionRow::updatedAt),
+                        key = { _, session -> session.sessionId },
+                    ) { index, session ->
+                        SessionRowItem(
+                            session = session,
+                            index = index,
+                            isCurrent = session.sessionId == currentSessionId,
+                            store = store,
+                            scope = scope,
+                            hidden = true,
+                            onToggleHidden = hostKey?.let { key ->
+                                { id: String, hide: Boolean ->
+                                    scope.launch { hostsStore.setSessionHidden(key, id, hide) }
+                                }
+                            },
+                            onNotice = { toast.second(it) },
+                            pinned = null,
+                            childCount = 0,
+                            childrenExpanded = false,
+                            onToggleChildren = {},
+                            onOpen = { openSession(session.sessionId) },
+                        )
+                    }
+                    return@LazyColumn
+                }
+
                 fun passes(session: SessionRow): Boolean = when (filter) {
                     DrawerFilter.Running -> session.running
                     DrawerFilter.NeedsYou -> session.pendingInteraction != null
@@ -840,6 +929,11 @@ fun ChatListDrawer(
                                 drag = if (depth == 0 && block != null) dragFor(block, root, onPickUp) else null,
                                 onNotice = { toast.second(it) },
                                 depth = depth,
+                                onToggleHidden = hostKey?.let { key ->
+                                    { id: String, hide: Boolean ->
+                                        scope.launch { hostsStore.setSessionHidden(key, id, hide) }
+                                    }
+                                },
                                 pinned = pinnedIds?.let { session.sessionId in it },
                                 childCount = childrenByParent[session.sessionId].orEmpty().size,
                                 childrenExpanded = isExpanded(session.sessionId),
@@ -1488,6 +1582,13 @@ private fun SessionRowItem(
     blockKey: String? = null,
     drag: RowDrag? = null,
     archived: Boolean = false,
+    /**
+     * Whether this row is shown from the Hidden filter. The hold menu then offers Unhide
+     * rather than Hide; the row is otherwise an ordinary row.
+     */
+    hidden: Boolean = false,
+    /** Hide or unhide a session, phone-locally. Null when there is no host to hide under. */
+    onToggleHidden: ((String, Boolean) -> Unit)? = null,
     onNotice: (String) -> Unit = {},
     depth: Int = 0,
     childCount: Int = 0,
@@ -1649,6 +1750,24 @@ private fun SessionRowItem(
                         )
                     } else {
                         add(HoldAction(stringResource(R.string.chatlist_session_archive), Icons.Outlined.Archive) { archiveConfirmOpen = true })
+                    }
+                    // Phone-local hide: the fish's sessions and other non-dev sessions stay out
+                    // of the list without touching harness state. Archiving would hide them from
+                    // the web UI too; hiding only hides them here, on this phone.
+                    onToggleHidden?.let { toggle ->
+                        if (hidden) {
+                            add(
+                                HoldAction(stringResource(R.string.chatlist_session_unhide), Icons.Outlined.Visibility) {
+                                    toggle(session.sessionId, false)
+                                },
+                            )
+                        } else {
+                            add(
+                                HoldAction(stringResource(R.string.chatlist_session_hide), Icons.Outlined.VisibilityOff) {
+                                    toggle(session.sessionId, true)
+                                },
+                            )
+                        }
                     }
                 },
             )

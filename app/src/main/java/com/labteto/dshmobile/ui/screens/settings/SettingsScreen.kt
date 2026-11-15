@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import android.app.Activity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.rememberCoroutineScope
 import com.labteto.dshmobile.ui.components.DsButtonSize
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -62,7 +64,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +77,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.labteto.dshmobile.BuildConfig
 import com.labteto.dshmobile.R
 import com.labteto.dshmobile.connection.AppSettings
+import com.labteto.dshmobile.security.BackupImportResult
+import com.labteto.dshmobile.security.PasskeyOutcome
+import com.labteto.dshmobile.security.RepairOutcome
 import com.labteto.dshmobile.connection.ConnectionPhase
 import com.labteto.dshmobile.connection.ConnectionUiState
 import com.labteto.dshmobile.connection.DELIVERY_QUEUE
@@ -285,6 +293,8 @@ fun SettingsScreen(onClose: () -> Unit, viewModel: SettingsViewModel = hiltViewM
                         settings.autoConnectLoopback,
                     ) { viewModel.set { it.copy(autoConnectLoopback = !it.autoConnectLoopback) } }
                 }
+
+                SecurityCard(viewModel)
 
                 // Only on a phone that has Termux: everything on this card goes through it.
                 if (viewModel.termuxInstalled) {
@@ -1197,3 +1207,307 @@ private fun accentLabelRes(palette: AccentPalette): Int = when (palette) {
 
 private const val PAGE_SETTINGS = "settings"
 private const val PAGE_ARCHIVED = "archived"
+
+/**
+ * Passkey login and content encryption, in the existing Settings page.
+ *
+ * One card, two sections, both additional paths that never replace the password login:
+ * the passkey signs in with a fingerprint once the server component exists, and content
+ * encryption stays gated off until the server decryptor answers its probe. Nothing here
+ * redesigns the page — it is a card like the others, with the same rows and buttons.
+ */
+@Composable
+private fun SecurityCard(viewModel: SettingsViewModel) {
+    val colors = DsTheme.colors
+    val toast = rememberDsToast()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val clipboard = LocalClipboardManager.current
+    val passkey by viewModel.passkeyStatus.collectAsStateWithLifecycle()
+    val encryption by viewModel.contentEncryptionState.collectAsStateWithLifecycle()
+
+    val done = stringResource(R.string.common_done)
+    val offline = stringResource(R.string.common_offline)
+    val passkeyServerMissing = stringResource(R.string.security_passkey_server_missing)
+    val encryptionServerMissing = stringResource(R.string.security_encryption_server_missing)
+    val alreadyRegistered = stringResource(R.string.security_passkey_registered)
+    val wrongPassphrase = stringResource(R.string.security_encryption_wrong_passphrase)
+    val notABackup = stringResource(R.string.security_encryption_not_a_backup)
+
+    // The key is made at first setup, and the two probes say whether the server components
+    // exist yet. All three are cheap and idempotent; the card cannot show its real state
+    // without them.
+    LaunchedEffect(Unit) {
+        viewModel.ensureContentKey()
+        viewModel.probePasskeyServer()
+        viewModel.probeDecryptor()
+    }
+
+    fun passkeyToast(outcome: PasskeyOutcome) {
+        when (outcome) {
+            PasskeyOutcome.Registered, PasskeyOutcome.LoggedIn, PasskeyOutcome.Removed -> toast.second(done)
+            PasskeyOutcome.Cancelled -> Unit
+            PasskeyOutcome.ServerMissing -> toast.second(passkeyServerMissing)
+            PasskeyOutcome.NoHost -> toast.second(offline)
+            PasskeyOutcome.AlreadyRegistered -> toast.second(alreadyRegistered)
+            is PasskeyOutcome.Failed -> toast.second(outcome.message)
+        }
+    }
+
+    var backupOpen by remember { mutableStateOf(false) }
+    var restoreOpen by remember { mutableStateOf(false) }
+
+    SettingsCard(stringResource(R.string.settings_security)) {
+        Text(
+            stringResource(R.string.security_passkey_title),
+            style = DsType.label12,
+            color = colors.labelTertiary,
+        )
+        Text(
+            stringResource(R.string.security_passkey_body),
+            style = DsType.small13,
+            color = colors.labelSecondary,
+        )
+        Text(
+            stringResource(
+                if (passkey.registered != null) R.string.security_passkey_registered
+                else R.string.security_passkey_not_registered,
+            ),
+            style = DsType.small13,
+            color = colors.labelTertiary,
+        )
+        if (passkey.serverInstalled == false) {
+            Text(
+                passkeyServerMissing,
+                style = DsType.caption11,
+                color = colors.warnLabel,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.small)) {
+            if (passkey.registered == null) {
+                DsButton(
+                    text = stringResource(R.string.security_passkey_register),
+                    onClick = {
+                        val current = activity ?: return@DsButton
+                        scope.launch { passkeyToast(viewModel.registerPasskey(current)) }
+                    },
+                    enabled = !passkey.busy && activity != null && passkey.connected,
+                    variant = DsButtonVariant.Outline,
+                    size = DsButtonSize.Small,
+                )
+            } else {
+                DsButton(
+                    text = stringResource(R.string.security_passkey_login),
+                    onClick = {
+                        val current = activity ?: return@DsButton
+                        scope.launch { passkeyToast(viewModel.loginWithPasskey(current)) }
+                    },
+                    enabled = !passkey.busy && activity != null && passkey.connected,
+                    variant = DsButtonVariant.Outline,
+                    size = DsButtonSize.Small,
+                )
+                DsButton(
+                    text = stringResource(R.string.security_passkey_remove),
+                    onClick = { scope.launch { passkeyToast(viewModel.removePasskey()) } },
+                    enabled = !passkey.busy,
+                    variant = DsButtonVariant.Ghost,
+                    size = DsButtonSize.Small,
+                )
+            }
+        }
+
+        Text(
+            stringResource(R.string.security_encryption_title),
+            style = DsType.label12,
+            color = colors.labelTertiary,
+            modifier = Modifier.padding(top = DsSpacing.small),
+        )
+        Text(
+            stringResource(R.string.security_encryption_body),
+            style = DsType.small13,
+            color = colors.labelSecondary,
+        )
+        // The gate, visible: the switch is disabled until the decryptor probe succeeds, so
+        // it can never be turned on into a state where DSH cannot read what the phone sends.
+        ToggleRow(
+            label = stringResource(R.string.security_encryption_enable),
+            checked = encryption.enabled,
+            enabled = encryption.decryptorReady == true,
+            onChange = {
+                scope.launch {
+                    if (!viewModel.setContentEncryption(!encryption.enabled)) {
+                        toast.second(encryptionServerMissing)
+                    }
+                }
+            },
+        )
+        if (encryption.decryptorReady != true) {
+            Text(
+                encryptionServerMissing,
+                style = DsType.caption11,
+                color = colors.warnLabel,
+            )
+            DsButton(
+                text = stringResource(R.string.security_encryption_check_server),
+                onClick = {
+                    scope.launch {
+                        if (viewModel.probeDecryptor() != true) toast.second(encryptionServerMissing)
+                        else toast.second(done)
+                    }
+                },
+                variant = DsButtonVariant.Outline,
+                size = DsButtonSize.Small,
+            )
+        }
+        encryption.keyFingerprint?.let { fingerprint ->
+            Text(
+                stringResource(R.string.security_encryption_key_fingerprint, fingerprint),
+                style = DsType.caption11,
+                color = colors.labelTertiary,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.small)) {
+            DsButton(
+                text = stringResource(R.string.security_encryption_backup),
+                onClick = { backupOpen = true },
+                enabled = encryption.keyReady,
+                variant = DsButtonVariant.Outline,
+                size = DsButtonSize.Small,
+            )
+            DsButton(
+                text = stringResource(R.string.security_encryption_restore),
+                onClick = { restoreOpen = true },
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+            )
+            DsButton(
+                text = stringResource(R.string.security_encryption_repair),
+                onClick = {
+                    scope.launch {
+                        when (val repaired = viewModel.repairContentKey()) {
+                            RepairOutcome.Repaired -> toast.second(done)
+                            RepairOutcome.ServerMissing -> toast.second(encryptionServerMissing)
+                            RepairOutcome.NoHost -> toast.second(offline)
+                            is RepairOutcome.Failed -> toast.second(repaired.message)
+                        }
+                    }
+                },
+                enabled = passkey.connected,
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+            )
+        }
+    }
+
+    if (backupOpen) {
+        var passphrase by remember { mutableStateOf("") }
+        var blob by remember { mutableStateOf<String?>(null) }
+        DsDialog(
+            title = stringResource(R.string.security_encryption_backup),
+            onDismiss = { backupOpen = false },
+        ) {
+            Text(
+                stringResource(R.string.security_encryption_backup_hint),
+                style = DsType.small13,
+                color = colors.labelSecondary,
+                modifier = Modifier.padding(bottom = DsSpacing.small),
+            )
+            if (blob == null) {
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text(stringResource(R.string.security_encryption_passphrase)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                DsButton(
+                    text = stringResource(R.string.security_encryption_backup),
+                    onClick = {
+                        scope.launch {
+                            blob = viewModel.exportContentBackup(passphrase)
+                        }
+                    },
+                    enabled = passphrase.isNotBlank(),
+                    variant = DsButtonVariant.Outline,
+                    size = DsButtonSize.Small,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+            } else {
+                Text(blob.orEmpty(), style = DsType.caption11, color = colors.labelSecondary)
+                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.small)) {
+                    DsButton(
+                        text = stringResource(R.string.common_copy),
+                        onClick = {
+                            clipboard.setText(AnnotatedString(blob.orEmpty()))
+                            toast.second(done)
+                        },
+                        variant = DsButtonVariant.Outline,
+                        size = DsButtonSize.Small,
+                    )
+                    DsButton(
+                        text = stringResource(R.string.common_close),
+                        onClick = { backupOpen = false },
+                        variant = DsButtonVariant.Ghost,
+                        size = DsButtonSize.Small,
+                    )
+                }
+            }
+        }
+    }
+
+    if (restoreOpen) {
+        var blob by remember { mutableStateOf("") }
+        var passphrase by remember { mutableStateOf("") }
+        DsDialog(
+            title = stringResource(R.string.security_encryption_restore),
+            onDismiss = { restoreOpen = false },
+        ) {
+            OutlinedTextField(
+                value = blob,
+                onValueChange = { blob = it },
+                label = { Text(stringResource(R.string.security_encryption_backup)) },
+                singleLine = false,
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = passphrase,
+                onValueChange = { passphrase = it },
+                label = { Text(stringResource(R.string.security_encryption_passphrase)) },
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = DsSpacing.small),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.small)) {
+                DsButton(
+                    text = stringResource(R.string.security_encryption_restore),
+                    onClick = {
+                        scope.launch {
+                            when (viewModel.importContentBackup(blob.trim(), passphrase)) {
+                                is BackupImportResult.Restored -> {
+                                    toast.second(done)
+                                    restoreOpen = false
+                                }
+                                BackupImportResult.WrongPassphrase -> toast.second(wrongPassphrase)
+                                BackupImportResult.NotABackup -> toast.second(notABackup)
+                            }
+                        }
+                    },
+                    enabled = blob.isNotBlank() && passphrase.isNotBlank(),
+                    variant = DsButtonVariant.Outline,
+                    size = DsButtonSize.Small,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+                DsButton(
+                    text = stringResource(R.string.common_close),
+                    onClick = { restoreOpen = false },
+                    variant = DsButtonVariant.Ghost,
+                    size = DsButtonSize.Small,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+            }
+        }
+    }
+}

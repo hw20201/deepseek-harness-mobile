@@ -70,6 +70,16 @@ class HarnessSessionStore @Inject constructor(
         return outcome
     }
 
+    /**
+     * Remember a session cookie for [hostId] that came from somewhere other than the
+     * launch-token exchange — the passkey login, whose gateway issues the cookie after
+     * verifying the assertion. The cookie is the same credential either way, and from here
+     * on the connection cannot tell how it was obtained.
+     */
+    suspend fun remember(hostId: String, cookie: String) {
+        write(sessions() + (hostId to cookie))
+    }
+
     /** Forget the session for [hostId]. Safe to call when there is none. */
     suspend fun remove(hostId: String) {
         val current = sessions()

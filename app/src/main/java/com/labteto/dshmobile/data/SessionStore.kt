@@ -341,6 +341,7 @@ class SessionStore @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context,
     private val connectionManager: ConnectionManager,
     private val hostsStore: HostsStore,
+    private val contentEncryption: com.labteto.dshmobile.security.ContentEncryptionService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Any()
@@ -2291,6 +2292,12 @@ class SessionStore @Inject constructor(
         val sid = targetSessionId ?: return PromptOutcome.Failed("no open session")
         val api = apiForHost(targetHost) ?: return PromptOutcome.Failed("not connected")
         val safeMode = if (mode == "steer") "steer" else "queue"
+        // Content encryption, when the gate is open: the text parts are replaced with their
+        // envelopes before anything else sees them, and the server decryptor unwraps them
+        // before DSH reads the task. When the gate is shut — encryption off, or the server
+        // decryptor not installed — the parts pass through untouched, so the plain-text path
+        // costs one flag read and nothing else.
+        val content = contentEncryption.encryptPartsIfEnabled(content)
         val zone = TimeZone.getDefault().id
         // `session/prompt` resolves the ordinary agent behind the session, and a child's is owned
         // by subagent routing — the host refuses it outright. Delivery goes through

@@ -20,6 +20,12 @@ kotlinxIo = "0.5.4"
 atomicfu = "0.26.0"
 okhttp = "4.12.0"
 zxingEmbedded = "4.3.0"
+# Android Credential Manager, for the passkey (FIDO2) ceremonies: `credentials` holds the
+# manager and the request/response types, `credentials-play-services-auth` the public-key
+# credential types themselves. 1.3.0 is the release whose `PublicKeyCredential` carries the
+# `registrationResponseJson` / `authenticationResponseJson` this app parses; the manager
+# backports the ceremonies through Play Services FIDO2 below API 34.
+credentials = "1.3.0"
 datastore = "1.1.1"
 workManager = "2.10.0"
 splashscreen = "1.0.1"
@@ -72,6 +78,8 @@ kotlinx-io-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-io-core", v
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingEmbedded" }
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor" }

@@ -1,9 +1,18 @@
 package com.labteto.dshmobile.ui.screens.settings
 
+import android.app.Activity
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.labteto.dshmobile.connection.AppSettings
+import com.labteto.dshmobile.security.BackupImportResult
+import com.labteto.dshmobile.security.ContentEncryptionService
+import com.labteto.dshmobile.security.ContentEncryptionState
+import com.labteto.dshmobile.security.PasskeyManager
+import com.labteto.dshmobile.security.PasskeyOutcome
+import com.labteto.dshmobile.security.PasskeyStore
+import com.labteto.dshmobile.security.PasskeyUiState
+import com.labteto.dshmobile.security.RepairOutcome
 import com.labteto.dshmobile.connection.ConnectionManager
 import com.labteto.dshmobile.connection.ConnectionUiState
 import com.labteto.dshmobile.connection.DiscoveryEngine
@@ -61,6 +70,9 @@ class SettingsViewModel @Inject constructor(
     private val updateChecker: UpdateChecker,
     private val termux: TermuxHarnessController,
     private val discoveryEngine: DiscoveryEngine,
+    private val passkeyManager: PasskeyManager,
+    private val passkeyStore: PasskeyStore,
+    private val contentEncryption: ContentEncryptionService,
 ) : ViewModel() {
 
     /** The manual update check; see [UpdateChecker.checkNow]. */
@@ -95,6 +107,57 @@ class SettingsViewModel @Inject constructor(
         SharingStarted.Eagerly,
         ConnectionUiState()
     )
+
+    /** Passkey status for the Security card: registration, server component, connection. */
+    val passkeyStatus: StateFlow<PasskeyUiState> = passkeyManager.status.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        PasskeyUiState(),
+    )
+
+    /** Content-encryption state for the Security card: gate, key, fingerprint. */
+    val contentEncryptionState: StateFlow<ContentEncryptionState> = contentEncryption.state.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        ContentEncryptionState(),
+    )
+
+    /** Ask the server component whether its passkey side is installed. Null when not connected. */
+    suspend fun probePasskeyServer(): Boolean? = passkeyManager.probeServer()
+
+    /** Register a passkey for the active host, after a dsh-password login. */
+    suspend fun registerPasskey(activity: Activity): PasskeyOutcome {
+        val userName = connectionManager.state.value.host?.proxyUsername ?: "dsh"
+        return passkeyManager.register(activity, userName)
+    }
+
+    /** Log in with the passkey for the active host. */
+    suspend fun loginWithPasskey(activity: Activity): PasskeyOutcome = passkeyManager.login(activity)
+
+    /** Remove the passkey for the active host (local record always, server revocation best-effort). */
+    suspend fun removePasskey(): PasskeyOutcome = passkeyManager.remove()
+
+    /** Make sure a content key exists on this phone, generating it at first setup. */
+    suspend fun ensureContentKey() = contentEncryption.ensureKey()
+
+    /** Ask the server component whether its decryptor is installed. Null when not connected. */
+    suspend fun probeDecryptor(): Boolean? = contentEncryption.probeDecryptor()
+
+    /**
+     * Switch content encryption on or off. Returns false when switching on was refused —
+     * the decryptor probe has not succeeded — so the toggle can never break the send path.
+     */
+    suspend fun setContentEncryption(enabled: Boolean): Boolean = contentEncryption.setEnabled(enabled)
+
+    /** A passphrase-encrypted backup line for the content key. Null when there is no key yet. */
+    suspend fun exportContentBackup(passphrase: String): String? = contentEncryption.exportBackup(passphrase)
+
+    /** Restore the content key from a backup line. */
+    suspend fun importContentBackup(blob: String, passphrase: String): BackupImportResult =
+        contentEncryption.importBackup(blob, passphrase)
+
+    /** Re-pair: ask the server for the content key it already holds, after a dsh-password login. */
+    suspend fun repairContentKey(): RepairOutcome = contentEncryption.repairKey()
 
     init {
         viewModelScope.launch {
@@ -165,6 +228,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             hostsStore.hosts.first().forEach { hostsStore.removeHost(it.id) }
             credentials.clear()
+            // A passkey is bound to a host this phone no longer remembers; the server record
+            // stays (it is useless without this phone's private key) and is cleared on the
+            // machine itself by the phone-lost procedure. The content key is *not* cleared
+            // here: it is the phone's key, not a host's, and forgetting a host must not orphan
+            // the encrypted messages it sent.
+            passkeyStore.clear()
             // The per-host sweep above drops each proxy credential through removeHost; this
             // catches anything orphaned by an earlier build.
             proxyCredentials.clear()

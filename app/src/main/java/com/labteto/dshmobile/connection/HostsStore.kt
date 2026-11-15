@@ -55,6 +55,7 @@ class HostsStore @Inject constructor(
         val COLLAPSED_PROJECTS = stringPreferencesKey("collapsed_projects_json")
         val UPDATE_CHECK = booleanPreferencesKey("update_check")
         val DISMISSED_UPDATE = stringPreferencesKey("dismissed_update")
+        val HIDDEN_SESSIONS = stringPreferencesKey("hidden_sessions_json")
         val FOLLOW_STREAMING = booleanPreferencesKey("follow_streaming")
         val DEFAULT_DELIVERY_MODE = stringPreferencesKey("default_delivery_mode")
     }
@@ -277,6 +278,28 @@ class HostsStore @Inject constructor(
             val current = perHostList(prefs[Keys.COLLAPSED_PROJECTS])[hostKey].orEmpty()
             val next = if (collapsed) (current + projectKey).distinct() else current - projectKey
             prefs[Keys.COLLAPSED_PROJECTS] = withHostList(prefs[Keys.COLLAPSED_PROJECTS], hostKey, next)
+        }
+    }
+
+    /**
+     * The sessions the reader hid from the drawer on [hostKey] — the fish's sessions, a
+     * one-off test, anything that is not a development task and should not be in the way.
+     *
+     * Phone-local, deliberately, unlike archiving: archiving is harness state, shared with
+     * the web UI, and hiding a session there would also hide it from every other client.
+     * A hidden session is still a live session — it can be opened from the Hidden filter,
+     * and unhidden from its hold menu. Ids of sessions that no longer exist are harmless
+     * and ignored by the drawer, like the collapsed-project ids beside them.
+     */
+    fun hiddenSessions(hostKey: String?): Flow<Set<String>> = dataStore.data.map { prefs ->
+        hostKey?.let { perHostList(prefs[Keys.HIDDEN_SESSIONS])[it] }.orEmpty().toSet()
+    }
+
+    suspend fun setSessionHidden(hostKey: String, sessionId: String, hidden: Boolean) {
+        dataStore.edit { prefs ->
+            val current = perHostList(prefs[Keys.HIDDEN_SESSIONS])[hostKey].orEmpty()
+            val next = if (hidden) (current + sessionId).distinct() else current - sessionId
+            prefs[Keys.HIDDEN_SESSIONS] = withHostList(prefs[Keys.HIDDEN_SESSIONS], hostKey, next)
         }
     }
 

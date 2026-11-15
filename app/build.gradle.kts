@@ -151,6 +151,11 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
+    // Passkey (FIDO2) ceremonies through Android Credential Manager. The manager itself is
+    // Jetpack; the public-key credential types ride the Play Services artifact, which is what
+    // backports the ceremonies below API 34.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
     // QR scanning for relay pairing. ZXing rather than ML Kit: it needs no Google Play Services, so
     // it works on a de-Googled device, and pairing is the one flow a user cannot route around.
     implementation(libs.zxing.android.embedded)
