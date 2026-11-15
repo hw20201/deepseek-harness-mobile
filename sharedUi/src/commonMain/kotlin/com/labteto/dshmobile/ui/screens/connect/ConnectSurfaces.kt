@@ -70,6 +70,8 @@ import com.labteto.dshmobile.shared.resources.connect_fail_not_harness
 import com.labteto.dshmobile.shared.resources.connect_fail_other
 import com.labteto.dshmobile.shared.resources.connect_fail_pairing
 import com.labteto.dshmobile.shared.resources.connect_fail_pairing_title
+import com.labteto.dshmobile.shared.resources.connect_fail_proxy_auth
+import com.labteto.dshmobile.shared.resources.connect_fail_proxy_title
 import com.labteto.dshmobile.shared.resources.connect_fail_refused
 import com.labteto.dshmobile.shared.resources.connect_fail_relay_session
 import com.labteto.dshmobile.shared.resources.connect_fail_relay_session_title
