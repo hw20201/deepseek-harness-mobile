@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">打开设置</string>
     <string name="shortcuts_close">关闭面板或对话框</string>
     <string name="chat_drop_hint">将文件拖到这里即可添加</string>
+    <string name="connect_proxy_username">代理用户名</string>
+    <string name="connect_proxy_password">代理密码</string>
+    <string name="connect_proxy_hint">仅当该地址位于要求用户名和密码的反向代理之后时才需要填写，否则两项都留空。</string>
+    <string name="connect_sign_in_proxy_refused">反向代理未接受该用户名和密码。请检查后，再用令牌重试。</string>
+    <string name="connect_fail_proxy_title">反向代理拒绝了登录</string>
+    <string name="connect_fail_proxy_auth">%1$s 要求提供反向代理的用户名和密码，而此处保存的已被拒绝。请在手动表单中检查后重新连接。harness 登录是另外一步，任何启动令牌都无法绕过代理。</string>
 </resources>

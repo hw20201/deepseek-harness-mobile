@@ -588,4 +588,10 @@
     <string name="shortcuts_settings">Open settings</string>
     <string name="shortcuts_close">Close a sheet or dialog</string>
     <string name="chat_drop_hint">Drop files here to attach them</string>
+    <string name="connect_proxy_username">Proxy username</string>
+    <string name="connect_proxy_password">Proxy password</string>
+    <string name="connect_proxy_hint">Only needed when the address is behind a reverse proxy that asks for a username and password. Leave both blank otherwise.</string>
+    <string name="connect_sign_in_proxy_refused">The reverse proxy didn\'t accept that username and password. Check them, then try the token again.</string>
+    <string name="connect_fail_proxy_title">The reverse proxy refused the sign-in</string>
+    <string name="connect_fail_proxy_auth">%1$s asked for a reverse-proxy username and password, and the ones saved here were refused. Check them in the manual form and connect again. The harness sign-in is a different step — no launch token can get past the proxy.</string>
 </resources>

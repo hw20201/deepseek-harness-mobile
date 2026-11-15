@@ -24,6 +24,8 @@
     <string name="connect_fail_other">%1$s-এ সংযোগ করা যায়নি। %2$s</string>
     <string name="connect_fail_pairing">রিলে আর এই ডিভাইসের টোকেন নিচ্ছে না। হয়তো এর মেয়াদ শেষ হয়ে গেছে, কিংবা রিলের ডিভাইস তালিকা থেকে এটি বাতিল করা হয়েছে। নতুন টোকেন পেতে আবার পেয়ার করুন।</string>
     <string name="connect_fail_pairing_title">রিলে এই ডিভাইসটি মানেনি</string>
+    <string name="connect_fail_proxy_auth">%1$s একটি রিভার্স প্রক্সির ব্যবহারকারীর নাম ও পাসওয়ার্ড চেয়েছে, এবং এখানে সংরক্ষিতগুলো প্রত্যাখ্যাত হয়েছে। ম্যানুয়াল ফর্মে সেগুলো যাচাই করে আবার সংযোগ করুন। harness সাইন-ইন আলাদা ধাপ — কোনো লঞ্চ টোকেন প্রক্সি পার হতে পারে না।</string>
+    <string name="connect_fail_proxy_title">রিভার্স প্রক্সি সাইন-ইন প্রত্যাখ্যান করেছে</string>
     <string name="connect_fail_refused">%1$s সংযোগ নেয়নি। LAN মোড চালু না থাকলে harness শুধু কম্পিউটারের নিজের মধ্যেই সংযোগ নেয়। LAN মোড চালু করে harness আবার চালু করুন। পোর্ট বদলে থাকলে সেটিও মিলিয়ে দেখুন।</string>
     <string name="connect_fail_relay_session">%1$s-এ থাকা রিলে এই ডিভাইসটি মেনে নিয়েছে, কিন্তু তার পেছনের harness রিলের সাইন-ইন মানেনি। আবার পেয়ার করে লাভ হবে না। ওই কম্পিউটারে dsh-relay আপডেট করে dsh web আবার চালু করুন।</string>
     <string name="connect_fail_relay_session_title">harness রিলেকে মানেনি</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">আবার পেয়ার করুন</string>
     <string name="connect_paste">পেস্ট</string>
     <string name="connect_protocol_baseline">প্রোটোকল %1$s</string>
+    <string name="connect_proxy_hint">ঠিকানাটি ব্যবহারকারীর নাম ও পাসওয়ার্ড চাওয়া রিভার্স প্রক্সির পেছনে থাকলেই কেবল এটি দরকার। অন্যথায় দুটি ঘরই ফাঁকা রাখুন।</string>
+    <string name="connect_proxy_password">প্রক্সি পাসওয়ার্ড</string>
+    <string name="connect_proxy_username">প্রক্সি ব্যবহারকারীর নাম</string>
     <string name="connect_reachable">পৌঁছানো যাচ্ছে</string>
     <string name="connect_relay_discovered_hint">এখনও কোনো রিলে পাওয়া যায়নি। harness-এর web প্রোফাইলে dsh-relay প্লাগইন ইনস্টল করে harness আবার চালু করুন, তারপর আবার খুঁজুন।</string>
     <string name="connect_relay_encrypted">এনক্রিপ্টেড</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">স্টার্টআপ লিংক বা টোকেন</string>
     <string name="connect_sign_in_link_body">harness চালু হলে একটি লিংক দেখায়। সেই লিংক পেস্ট করুন, অথবা ?token=-এর পরের টোকেন।</string>
     <string name="connect_sign_in_no_host">আগে সংযোগের চেষ্টা করুন, তারপর সাইন ইন করুন।</string>
+    <string name="connect_sign_in_proxy_refused">রিভার্স প্রক্সি ওই ব্যবহারকারীর নাম ও পাসওয়ার্ড গ্রহণ করেনি। সেগুলো যাচাই করে তারপর আবার টোকেন দিয়ে চেষ্টা করুন।</string>
     <string name="connect_sign_in_refused">harness সেই টোকেন নেয়নি। এটি প্রতিবার আবার চালু করলে বদলায়, তাই সবচেয়ে নতুন স্টার্টআপ লাইনটি দেখুন।</string>
     <string name="connect_sign_in_subtitle">এই harness এখনও এই ফোনকে সাইন ইন করায়নি।</string>
     <string name="connect_sign_in_title">এই harness-এ সাইন ইন করুন</string>

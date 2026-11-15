@@ -24,6 +24,8 @@
     <string name="connect_fail_other">Не удалось подключиться к %1$s. %2$s</string>
     <string name="connect_fail_pairing">Реле больше не принимает токен этого устройства. Он мог истечь или быть отозван в списке устройств реле. Выполните сопряжение заново, чтобы получить новый.</string>
     <string name="connect_fail_pairing_title">Реле отклонило это устройство</string>
+    <string name="connect_fail_proxy_auth">%1$s запросил имя пользователя и пароль обратного прокси, а сохранённые здесь были отклонены. Проверьте их в форме ручного ввода и подключитесь снова. Вход в harness — отдельный шаг: никакой стартовый токен не пройдёт через прокси.</string>
+    <string name="connect_fail_proxy_title">Обратный прокси отклонил вход</string>
     <string name="connect_fail_refused">%1$s отклонил подключение. Пока не включён режим LAN, harness принимает подключения только на самом компьютере. Включите этот режим и перезапустите harness. Если вы меняли порт, проверьте, что он совпадает.</string>
     <string name="connect_fail_relay_session">Реле на %1$s приняло это устройство, но стоящий за ним harness не принял само реле. Повторное сопряжение не поможет. Обновите dsh-relay на том компьютере и перезапустите dsh web.</string>
     <string name="connect_fail_relay_session_title">Harness отклонил реле</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">Сопрячь заново</string>
     <string name="connect_paste">Вставить</string>
     <string name="connect_protocol_baseline">Протокол %1$s</string>
+    <string name="connect_proxy_hint">Нужно только если адрес находится за обратным прокси, который запрашивает имя пользователя и пароль. В остальных случаях оставьте оба поля пустыми.</string>
+    <string name="connect_proxy_password">Пароль прокси</string>
+    <string name="connect_proxy_username">Имя пользователя прокси</string>
     <string name="connect_reachable">Доступен</string>
     <string name="connect_relay_discovered_hint">Реле пока не найдены. Установите плагин dsh-relay в веб-профиль harness, перезапустите его и повторите поиск.</string>
     <string name="connect_relay_encrypted">Шифруется</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">Стартовая ссылка или токен</string>
     <string name="connect_sign_in_link_body">Harness печатает ссылку при запуске. Вставьте её или только токен после ?token=.</string>
     <string name="connect_sign_in_no_host">Сначала попробуйте подключиться, затем войдите.</string>
+    <string name="connect_sign_in_proxy_refused">Обратный прокси не принял это имя пользователя и пароль. Проверьте их и попробуйте ещё раз с токеном.</string>
     <string name="connect_sign_in_refused">Harness не принял этот токен. Он меняется при каждом перезапуске, поэтому проверьте последнюю строку запуска.</string>
     <string name="connect_sign_in_subtitle">Этот harness ещё не разрешил вход с этого телефона.</string>
     <string name="connect_sign_in_title">Войти в этот harness</string>

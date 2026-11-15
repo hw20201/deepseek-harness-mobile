@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">सेटिंग्स खोलें</string>
     <string name="shortcuts_close">शीट या डायलॉग बंद करें</string>
     <string name="chat_drop_hint">जोड़ने के लिए फ़ाइलें यहाँ छोड़ें</string>
+    <string name="connect_proxy_username">प्रॉक्सी उपयोगकर्ता नाम</string>
+    <string name="connect_proxy_password">प्रॉक्सी पासवर्ड</string>
+    <string name="connect_proxy_hint">केवल तभी ज़रूरी है जब पता किसी रिवर्स प्रॉक्सी के पीछे हो जो उपयोगकर्ता नाम और पासवर्ड माँगता हो। अन्यथा दोनों खाली छोड़ दें।</string>
+    <string name="connect_sign_in_proxy_refused">रिवर्स प्रॉक्सी ने वह उपयोगकर्ता नाम और पासवर्ड स्वीकार नहीं किया। उन्हें जाँचें, फिर टोकन से दोबारा कोशिश करें।</string>
+    <string name="connect_fail_proxy_title">रिवर्स प्रॉक्सी ने साइन-इन अस्वीकार कर दिया</string>
+    <string name="connect_fail_proxy_auth">%1$s ने रिवर्स प्रॉक्सी का उपयोगकर्ता नाम और पासवर्ड माँगा, और यहाँ सहेजे गए अस्वीकार कर दिए गए। मैन्युअल फ़ॉर्म में उन्हें जाँचें और फिर से कनेक्ट करें। harness साइन-इन अलग चरण है — कोई लॉन्च टोकन प्रॉक्सी को पार नहीं कर सकता।</string>
 </resources>

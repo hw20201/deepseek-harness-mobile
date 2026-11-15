@@ -24,6 +24,8 @@
     <string name="connect_fail_other">无法连接到 %1$s。%2$s</string>
     <string name="connect_fail_pairing">中继不再接受本设备的令牌。它可能已过期，或已从中继的设备列表中移除。请重新配对以获取新令牌。</string>
     <string name="connect_fail_pairing_title">中继拒绝了本设备</string>
+    <string name="connect_fail_proxy_auth">%1$s 要求提供反向代理的用户名和密码，而此处保存的已被拒绝。请在手动表单中检查后重新连接。harness 登录是另外一步，任何启动令牌都无法绕过代理。</string>
+    <string name="connect_fail_proxy_title">反向代理拒绝了登录</string>
     <string name="connect_fail_refused">%1$s 拒绝了连接。未启用 LAN 模式时，harness 只在电脑本机监听，请启用后重启 harness。如果改过端口，请确认两边一致。</string>
     <string name="connect_fail_relay_session">%1$s 上的中继已接受本设备，但它背后的 harness 拒绝了中继的登录。重新配对没有用，请更新那台电脑上的 dsh-relay 并重启 dsh web。</string>
     <string name="connect_fail_relay_session_title">harness 拒绝了中继</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">重新配对</string>
     <string name="connect_paste">粘贴</string>
     <string name="connect_protocol_baseline">协议 %1$s</string>
+    <string name="connect_proxy_hint">仅当该地址位于要求用户名和密码的反向代理之后时才需要填写，否则两项都留空。</string>
+    <string name="connect_proxy_password">代理密码</string>
+    <string name="connect_proxy_username">代理用户名</string>
     <string name="connect_reachable">可连接</string>
     <string name="connect_relay_discovered_hint">暂时没有发现中继。请在 harness 的 web 配置中安装 dsh-relay 插件并重启，然后再次查找。</string>
     <string name="connect_relay_encrypted">已加密</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">启动链接或令牌</string>
     <string name="connect_sign_in_link_body">harness 启动时会打印链接。粘贴该链接，或只粘贴 ?token= 后面的令牌。</string>
     <string name="connect_sign_in_no_host">请先连接，再登录。</string>
+    <string name="connect_sign_in_proxy_refused">反向代理未接受该用户名和密码。请检查后，再用令牌重试。</string>
     <string name="connect_sign_in_refused">harness 没有接受该令牌。令牌每次重启都会变，请查看启动时打印的最新一行。</string>
     <string name="connect_sign_in_subtitle">harness 还没有为这部手机登录。</string>
     <string name="connect_sign_in_title">登录到此 harness</string>

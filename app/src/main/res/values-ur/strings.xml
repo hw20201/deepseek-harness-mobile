@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">سیٹنگز کھولیں</string>
     <string name="shortcuts_close">شیٹ یا ڈائیلاگ بند کریں</string>
     <string name="chat_drop_hint">منسلک کرنے کے لیے فائلیں یہاں چھوڑ دیں</string>
+    <string name="connect_proxy_username">پراکسی صارف نام</string>
+    <string name="connect_proxy_password">پراکسی پاس ورڈ</string>
+    <string name="connect_proxy_hint">صرف اس وقت ضروری ہے جب پتہ کسی ریورس پراکسی کے پیچھے ہو جو صارف نام اور پاس ورڈ مانگتا ہو۔ ورنہ دونوں خانے خالی چھوڑ دیں۔</string>
+    <string name="connect_sign_in_proxy_refused">ریورس پراکسی نے وہ صارف نام اور پاس ورڈ قبول نہیں کیا۔ انہیں جانچیں، پھر ٹوکن سے دوبارہ کوشش کریں۔</string>
+    <string name="connect_fail_proxy_title">ریورس پراکسی نے سائن ان مسترد کر دیا</string>
+    <string name="connect_fail_proxy_auth">%1$s نے ریورس پراکسی کا صارف نام اور پاس ورڈ مانگا، اور یہاں محفوظ شدہ مسترد کر دیے گئے۔ انہیں دستی فارم میں جانچیں اور دوبارہ جڑیں۔ harness سائن ان الگ مرحلہ ہے — کوئی لانچ ٹوکن پراکسی سے نہیں گزر سکتا۔</string>
 </resources>

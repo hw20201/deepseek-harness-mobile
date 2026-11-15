@@ -24,6 +24,8 @@
     <string name="connect_fail_other">Impossible de se connecter à %1$s. %2$s</string>
     <string name="connect_fail_pairing">Le relais n'accepte plus le jeton de cet appareil. Il a peut-être expiré, ou été révoqué depuis la liste des appareils du relais. Appairez de nouveau pour en obtenir un autre.</string>
     <string name="connect_fail_pairing_title">Le relais a refusé cet appareil</string>
+    <string name="connect_fail_proxy_auth">%1$s a demandé un nom d'utilisateur et un mot de passe de proxy inverse, et ceux enregistrés ici ont été refusés. Vérifiez-les dans le formulaire manuel et reconnectez-vous. La connexion au harness est une autre étape : aucun token de lancement ne peut passer le proxy.</string>
+    <string name="connect_fail_proxy_title">Le proxy inverse a refusé la connexion</string>
     <string name="connect_fail_refused">%1$s a refusé la connexion. Tant que le mode LAN n'est pas activé, le harness n'écoute que sur l'ordinateur lui-même. Activez-le et redémarrez le harness. Si vous avez changé le port, vérifiez qu'il correspond.</string>
     <string name="connect_fail_relay_session">Le relais à %1$s a accepté cet appareil, mais le harness derrière lui a refusé le relais. Appairer de nouveau n'y changera rien. Mettez à jour dsh-relay sur cet ordinateur et redémarrez dsh web.</string>
     <string name="connect_fail_relay_session_title">Le harness a refusé le relais</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">Appairer de nouveau</string>
     <string name="connect_paste">Coller</string>
     <string name="connect_protocol_baseline">Protocole %1$s</string>
+    <string name="connect_proxy_hint">Nécessaire uniquement si l'adresse est derrière un proxy inverse qui demande un nom d'utilisateur et un mot de passe. Laissez les deux champs vides sinon.</string>
+    <string name="connect_proxy_password">Mot de passe du proxy</string>
+    <string name="connect_proxy_username">Nom d'utilisateur du proxy</string>
     <string name="connect_reachable">Joignable</string>
     <string name="connect_relay_discovered_hint">Aucun relais trouvé pour l'instant. Installez le plugin dsh-relay dans le profil web du harness, redémarrez-le, puis relancez la recherche.</string>
     <string name="connect_relay_encrypted">Chiffré</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">Lien de démarrage ou jeton</string>
     <string name="connect_sign_in_link_body">Le harness affiche un lien au démarrage. Collez ce lien, ou juste le jeton après ?token=.</string>
     <string name="connect_sign_in_no_host">Essayez d’abord de vous connecter, puis identifiez-vous.</string>
+    <string name="connect_sign_in_proxy_refused">Le proxy inverse n'a pas accepté ce nom d'utilisateur et ce mot de passe. Vérifiez-les, puis réessayez avec le token.</string>
     <string name="connect_sign_in_refused">Le harness n’a pas accepté ce jeton. Il change à chaque redémarrage : vérifiez la dernière ligne de démarrage.</string>
     <string name="connect_sign_in_subtitle">Ce harness n'a pas encore autorisé ce téléphone.</string>
     <string name="connect_sign_in_title">Se connecter à ce harness</string>

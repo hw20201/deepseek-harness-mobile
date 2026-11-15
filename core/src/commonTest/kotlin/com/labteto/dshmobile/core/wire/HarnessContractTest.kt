@@ -443,7 +443,8 @@ class HarnessContractTest {
     fun aMuxUpgradeRefusedWith401ThatAsksForCredentialsStillReportsItsStatus() = test { client ->
         // A 401 with `WWW-Authenticate` is an HTTP authentication challenge to `NSURLSession`, a different
         // path through the delegate from a bare 401. The socket has no credential to give and must still say
-        // 401, not "cancelled".
+        // 401, not "cancelled". And because the challenge is Basic, the refusal classifies as a proxy
+        // refusal, not a harness one: the fixture is exactly a server asking for proxy credentials.
         val sink = EventSink()
         val socket = rig.newMuxSocket(client, "${rig.plainUrl}/ci/ws-challenge", sink, connectTimeoutMs = 8_000)
         val started = TimeSource.Monotonic.markNow()
@@ -458,7 +459,7 @@ class HarnessContractTest {
         val refusal = (event as? SocketEvent.Closed)?.cause as? RpcTransportException
             ?: fail("expected a refusal carrying its status, was ${event?.describe()}")
         assertEquals(401, refusal.status)
-        assertEquals(TransportFailure.UNAUTHENTICATED, TransportFailures.classify(refusal))
+        assertEquals(TransportFailure.PROXY_UNAUTHENTICATED, TransportFailures.classify(refusal))
         assertTrue(elapsed < 4_000, "reported after ${elapsed}ms")
     }
 

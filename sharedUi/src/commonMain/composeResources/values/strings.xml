@@ -58,12 +58,12 @@
     <string name="connect_mode_lan">Local network</string>
     <string name="connect_mode_loopback">This phone</string>
     <string name="connect_mode_relay">Relay</string>
-    <string name="connect_proxy_hint">Only needed when the address is behind a reverse proxy that asks for a username and password. Leave both blank otherwise.</string>
-    <string name="connect_proxy_password">Proxy password</string>
-    <string name="connect_proxy_username">Proxy username</string>
     <string name="connect_pair_again">Pair again</string>
     <string name="connect_paste">Paste</string>
     <string name="connect_protocol_baseline">Protocol %1$s</string>
+    <string name="connect_proxy_hint">Only needed when the address is behind a reverse proxy that asks for a username and password. Leave both blank otherwise.</string>
+    <string name="connect_proxy_password">Proxy password</string>
+    <string name="connect_proxy_username">Proxy username</string>
     <string name="connect_reachable">Reachable</string>
     <string name="connect_relay_discovered_hint">No relays found yet. Install the dsh-relay plugin in the harness web profile, restart it, then look again.</string>
     <string name="connect_relay_encrypted">Encrypted</string>

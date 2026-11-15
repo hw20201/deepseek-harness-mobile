@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">Ouvrir les paramètres</string>
     <string name="shortcuts_close">Fermer la feuille ou la boîte de dialogue</string>
     <string name="chat_drop_hint">Déposez des fichiers ici pour les joindre</string>
+    <string name="connect_proxy_username">Nom d\'utilisateur du proxy</string>
+    <string name="connect_proxy_password">Mot de passe du proxy</string>
+    <string name="connect_proxy_hint">Nécessaire uniquement si l'adresse est derrière un proxy inverse qui demande un nom d'utilisateur et un mot de passe. Laissez les deux champs vides sinon.</string>
+    <string name="connect_sign_in_proxy_refused">Le proxy inverse n\'a pas accepté ce nom d\'utilisateur et ce mot de passe. Vérifiez-les, puis réessayez avec le token.</string>
+    <string name="connect_fail_proxy_title">Le proxy inverse a refusé la connexion</string>
+    <string name="connect_fail_proxy_auth">%1$s a demandé un nom d\'utilisateur et un mot de passe de proxy inverse, et ceux enregistrés ici ont été refusés. Vérifiez-les dans le formulaire manuel et reconnectez-vous. La connexion au harness est une autre étape : aucun token de lancement ne peut passer le proxy.</string>
 </resources>

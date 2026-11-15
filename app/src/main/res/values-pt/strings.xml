@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">Abrir configurações</string>
     <string name="shortcuts_close">Fechar painel ou caixa de diálogo</string>
     <string name="chat_drop_hint">Solte os arquivos aqui para anexá-los</string>
+    <string name="connect_proxy_username">Nome de usuário do proxy</string>
+    <string name="connect_proxy_password">Senha do proxy</string>
+    <string name="connect_proxy_hint">Só é necessário quando o endereço está atrás de um proxy reverso que pede nome de usuário e senha. Deixe os dois em branco caso contrário.</string>
+    <string name="connect_sign_in_proxy_refused">O proxy reverso não aceitou esse nome de usuário e essa senha. Confira-os e tente novamente com o token.</string>
+    <string name="connect_fail_proxy_title">O proxy reverso recusou o login</string>
+    <string name="connect_fail_proxy_auth">%1$s pediu nome de usuário e senha de proxy reverso, e os salvos aqui foram recusados. Confira-os no formulário manual e conecte novamente. O login do harness é outra etapa: nenhum token de lançamento pode passar pelo proxy.</string>
 </resources>

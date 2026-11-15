@@ -24,6 +24,8 @@
     <string name="connect_fail_other">%1$s سے جڑنا ممکن نہیں ہوا۔ %2$s</string>
     <string name="connect_fail_pairing">ریلے اب اس ڈیوائس کا ٹوکن قبول نہیں کرتا۔ ممکن ہے اس کی میعاد ختم ہو گئی ہو، یا اسے ریلے کی ڈیوائس فہرست سے منسوخ کر دیا گیا ہو۔ نیا ٹوکن حاصل کرنے کے لیے دوبارہ پیئر کریں۔</string>
     <string name="connect_fail_pairing_title">ریلے نے اس ڈیوائس کو مسترد کر دیا</string>
+    <string name="connect_fail_proxy_auth">%1$s نے ریورس پراکسی کا صارف نام اور پاس ورڈ مانگا، اور یہاں محفوظ شدہ مسترد کر دیے گئے۔ انہیں دستی فارم میں جانچیں اور دوبارہ جڑیں۔ harness سائن ان الگ مرحلہ ہے — کوئی لانچ ٹوکن پراکسی سے نہیں گزر سکتا۔</string>
+    <string name="connect_fail_proxy_title">ریورس پراکسی نے سائن ان مسترد کر دیا</string>
     <string name="connect_fail_refused">%1$s نے کنکشن مسترد کر دیا۔ LAN موڈ فعال کیے بغیر harness صرف کمپیوٹر کے اندر سے آنے والے کنکشن لیتا ہے۔ اسے فعال کر کے harness دوبارہ چلائیں۔ اگر پورٹ بدلا ہے تو وہ بھی دیکھ لیں۔</string>
     <string name="connect_fail_relay_session">%1$s پر موجود ریلے نے اس ڈیوائس کو قبول کر لیا، لیکن اس کے پیچھے موجود harness نے ریلے کو سائن ان نہیں ہونے دیا۔ دوبارہ پیئر کرنے سے کچھ نہیں بدلے گا۔ اُس کمپیوٹر پر dsh-relay اپ ڈیٹ کریں اور dsh web دوبارہ شروع کریں۔</string>
     <string name="connect_fail_relay_session_title">Harness نے ریلے کو مسترد کر دیا</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">دوبارہ پیئر کریں</string>
     <string name="connect_paste">چسپاں کریں</string>
     <string name="connect_protocol_baseline">پروٹوکول %1$s</string>
+    <string name="connect_proxy_hint">صرف اس وقت ضروری ہے جب پتہ کسی ریورس پراکسی کے پیچھے ہو جو صارف نام اور پاس ورڈ مانگتا ہو۔ ورنہ دونوں خانے خالی چھوڑ دیں۔</string>
+    <string name="connect_proxy_password">پراکسی پاس ورڈ</string>
+    <string name="connect_proxy_username">پراکسی صارف نام</string>
     <string name="connect_reachable">قابل رسائی</string>
     <string name="connect_relay_discovered_hint">ابھی کوئی ریلے نہیں ملا۔ harness کے web پروفائل میں dsh-relay پلگ ان نصب کر کے اسے دوبارہ چلائیں، پھر دوبارہ تلاش کریں۔</string>
     <string name="connect_relay_encrypted">مشفّر</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">اسٹارٹ اپ لنک یا ٹوکن</string>
     <string name="connect_sign_in_link_body">Harness شروع ہونے پر ایک لنک دکھاتا ہے۔ وہ لنک پیسٹ کریں، یا صرف ?token= کے بعد والا ٹوکن۔</string>
     <string name="connect_sign_in_no_host">پہلے منسلک ہونے کی کوشش کریں، پھر سائن ان کریں۔</string>
+    <string name="connect_sign_in_proxy_refused">ریورس پراکسی نے وہ صارف نام اور پاس ورڈ قبول نہیں کیا۔ انہیں جانچیں، پھر ٹوکن سے دوبارہ کوشش کریں۔</string>
     <string name="connect_sign_in_refused">Harness نے وہ ٹوکن قبول نہیں کیا۔ یہ ہر بار دوبارہ شروع ہونے پر بدلتا ہے، اس لیے تازہ ترین اسٹارٹ اپ لائن دیکھیں۔</string>
     <string name="connect_sign_in_subtitle">اس harness نے ابھی اس فون کو سائن ان نہیں کیا۔</string>
     <string name="connect_sign_in_title">اس harness میں سائن ان کریں</string>

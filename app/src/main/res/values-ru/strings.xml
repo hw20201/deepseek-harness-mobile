@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">Открыть настройки</string>
     <string name="shortcuts_close">Закрыть панель или диалог</string>
     <string name="chat_drop_hint">Перетащите файлы сюда, чтобы прикрепить</string>
+    <string name="connect_proxy_username">Имя пользователя прокси</string>
+    <string name="connect_proxy_password">Пароль прокси</string>
+    <string name="connect_proxy_hint">Нужно только если адрес находится за обратным прокси, который запрашивает имя пользователя и пароль. В остальных случаях оставьте оба поля пустыми.</string>
+    <string name="connect_sign_in_proxy_refused">Обратный прокси не принял это имя пользователя и пароль. Проверьте их и попробуйте ещё раз с токеном.</string>
+    <string name="connect_fail_proxy_title">Обратный прокси отклонил вход</string>
+    <string name="connect_fail_proxy_auth">%1$s запросил имя пользователя и пароль обратного прокси, а сохранённые здесь были отклонены. Проверьте их в форме ручного ввода и подключитесь снова. Вход в harness — отдельный шаг: никакой стартовый токен не пройдёт через прокси.</string>
 </resources>

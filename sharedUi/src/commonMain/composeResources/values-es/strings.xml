@@ -24,6 +24,8 @@
     <string name="connect_fail_other">No se pudo conectar con %1$s. %2$s</string>
     <string name="connect_fail_pairing">El relay ya no acepta el token de este dispositivo. Puede haber caducado o haberse revocado en la lista de dispositivos del relay. Vuelve a emparejar para obtener uno nuevo.</string>
     <string name="connect_fail_pairing_title">El relay rechazó este dispositivo</string>
+    <string name="connect_fail_proxy_auth">%1$s pidió un nombre de usuario y una contraseña de proxy inverso, y los guardados aquí fueron rechazados. Revísalos en el formulario manual y vuelve a conectar. El inicio de sesión del harness es otro paso: ningún token de arranque puede pasar el proxy.</string>
+    <string name="connect_fail_proxy_title">El proxy inverso rechazó el inicio de sesión</string>
     <string name="connect_fail_refused">%1$s rechazó la conexión. Si el modo LAN no está activado, el harness solo escucha en el propio ordenador. Actívalo y reinicia el harness. Si cambiaste el puerto, comprueba que sea el mismo.</string>
     <string name="connect_fail_relay_session">El relay en %1$s aceptó este dispositivo, pero el harness que hay detrás lo rechazó: el relay no pudo iniciar sesión en él. Volver a emparejar no ayudará. Actualiza dsh-relay en ese ordenador y reinicia dsh web.</string>
     <string name="connect_fail_relay_session_title">El harness rechazó el relay</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">Volver a emparejar</string>
     <string name="connect_paste">Pegar</string>
     <string name="connect_protocol_baseline">Protocolo %1$s</string>
+    <string name="connect_proxy_hint">Solo necesario cuando la dirección está detrás de un proxy inverso que pide un nombre de usuario y una contraseña. Deja ambos en blanco en caso contrario.</string>
+    <string name="connect_proxy_password">Contraseña del proxy</string>
+    <string name="connect_proxy_username">Nombre de usuario del proxy</string>
     <string name="connect_reachable">Disponible</string>
     <string name="connect_relay_discovered_hint">Aún no se ha encontrado ningún relay. Instala el complemento dsh-relay en el perfil web del harness, reinícialo y vuelve a buscar.</string>
     <string name="connect_relay_encrypted">Cifrado</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">Enlace de arranque o token</string>
     <string name="connect_sign_in_link_body">El harness imprime un enlace al arrancar. Pega ese enlace, o solo el token tras ?token=.</string>
     <string name="connect_sign_in_no_host">Conéctate primero y luego inicia sesión.</string>
+    <string name="connect_sign_in_proxy_refused">El proxy inverso no aceptó ese nombre de usuario y esa contraseña. Revísalos y vuelve a intentarlo con el token.</string>
     <string name="connect_sign_in_refused">El harness no aceptó ese token. Cambia en cada reinicio, así que usa el de la línea de arranque más reciente.</string>
     <string name="connect_sign_in_subtitle">Este harness aún no ha autorizado este teléfono.</string>
     <string name="connect_sign_in_title">Iniciar sesión en este harness</string>

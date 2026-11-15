@@ -24,6 +24,8 @@
     <string name="connect_fail_other">تعذّر الاتصال بـ %1$s. %2$s</string>
     <string name="connect_fail_pairing">لم يعد المُرحِّل يقبل رمز هذا الجهاز. قد تكون صلاحيته انتهت أو أُبطِل من قائمة أجهزة المُرحِّل. كرّر الاقتران للحصول على رمز جديد.</string>
     <string name="connect_fail_pairing_title">رفض المُرحِّل هذا الجهاز</string>
+    <string name="connect_fail_proxy_auth">%1$s طلب اسم مستخدم وكلمة مرور للبروكسي العكسي، وتم رفض المحفوظين هنا. تحقق منهما في النموذج اليدوي ثم اتصل مجددًا. تسجيل الدخول إلى الـ harness خطوة مختلفة — لا يمكن لأي رمز بدء تجاوز البروكسي.</string>
+    <string name="connect_fail_proxy_title">رفض البروكسي العكسي تسجيل الدخول</string>
     <string name="connect_fail_refused">رفض %1$s الاتصال. لا يستقبل الـ harness اتصالات إلا من الكمبيوتر نفسه ما لم يكن وضع الشبكة المحلية مفعّلًا. فعّله ثم أعد تشغيل الـ harness. وإن غيّرت المنفذ، فتأكد أنه مطابق.</string>
     <string name="connect_fail_relay_session">قبِل المُرحِّل على %1$s هذا الجهاز، لكن harness الذي خلفه رفض تسجيل دخول المُرحِّل. إعادة الاقتران لن تفيد. حدِّث dsh-relay على ذلك الكمبيوتر ثم أعد تشغيل dsh web.</string>
     <string name="connect_fail_relay_session_title">رفض الخادم المُرحِّل</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">تكرار الاقتران</string>
     <string name="connect_paste">لصق</string>
     <string name="connect_protocol_baseline">البروتوكول %1$s</string>
+    <string name="connect_proxy_hint">يلزم فقط عندما يكون العنوان خلف بروكسي عكسي يطلب اسم مستخدم وكلمة مرور. اترك الحقلين فارغين في غير ذلك.</string>
+    <string name="connect_proxy_password">كلمة مرور البروكسي</string>
+    <string name="connect_proxy_username">اسم مستخدم البروكسي</string>
     <string name="connect_reachable">يمكن الوصول إليه</string>
     <string name="connect_relay_discovered_hint">لم نجد أي مُرحِّل بعد. ثبّت إضافة dsh-relay في الملف الشخصي web الخاص بـ harness وأعد تشغيله، ثم ابحث مرة أخرى.</string>
     <string name="connect_relay_encrypted">مُشفَّر</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">رابط البدء أو الرمز</string>
     <string name="connect_sign_in_link_body">يطبع الـ harness رابطًا عند بدء التشغيل. الصق الرابط، أو الرمز فقط بعد ?token=.</string>
     <string name="connect_sign_in_no_host">حاول الاتصال أولًا، ثم سجّل الدخول.</string>
+    <string name="connect_sign_in_proxy_refused">لم يقبل البروكسي العكسي اسم المستخدم وكلمة المرور هذين. تحقق منهما، ثم حاول بالرمز مجددًا.</string>
     <string name="connect_sign_in_refused">لم يقبل الخادم هذا الرمز. يتغيّر الرمز مع كل إعادة تشغيل، فراجع آخر سطر طُبع عند بدء التشغيل.</string>
     <string name="connect_sign_in_subtitle">لم يسجّل هذا الـ harness دخول هذا الهاتف بعد.</string>
     <string name="connect_sign_in_title">تسجيل الدخول إلى هذا الخادم</string>

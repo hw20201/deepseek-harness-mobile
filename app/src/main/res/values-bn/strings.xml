@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">সেটিংস খুলুন</string>
     <string name="shortcuts_close">শিট বা ডায়ালগ বন্ধ করুন</string>
     <string name="chat_drop_hint">সংযুক্ত করতে ফাইলগুলো এখানে ছেড়ে দিন</string>
+    <string name="connect_proxy_username">প্রক্সি ব্যবহারকারীর নাম</string>
+    <string name="connect_proxy_password">প্রক্সি পাসওয়ার্ড</string>
+    <string name="connect_proxy_hint">ঠিকানাটি ব্যবহারকারীর নাম ও পাসওয়ার্ড চাওয়া রিভার্স প্রক্সির পেছনে থাকলেই কেবল এটি দরকার। অন্যথায় দুটি ঘরই ফাঁকা রাখুন।</string>
+    <string name="connect_sign_in_proxy_refused">রিভার্স প্রক্সি ওই ব্যবহারকারীর নাম ও পাসওয়ার্ড গ্রহণ করেনি। সেগুলো যাচাই করে তারপর আবার টোকেন দিয়ে চেষ্টা করুন।</string>
+    <string name="connect_fail_proxy_title">রিভার্স প্রক্সি সাইন-ইন প্রত্যাখ্যান করেছে</string>
+    <string name="connect_fail_proxy_auth">%1$s একটি রিভার্স প্রক্সির ব্যবহারকারীর নাম ও পাসওয়ার্ড চেয়েছে, এবং এখানে সংরক্ষিতগুলো প্রত্যাখ্যাত হয়েছে। ম্যানুয়াল ফর্মে সেগুলো যাচাই করে আবার সংযোগ করুন। harness সাইন-ইন আলাদা ধাপ — কোনো লঞ্চ টোকেন প্রক্সি পার হতে পারে না।</string>
 </resources>

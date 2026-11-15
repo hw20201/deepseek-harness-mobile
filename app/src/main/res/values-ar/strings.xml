@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">فتح الإعدادات</string>
     <string name="shortcuts_close">إغلاق النافذة أو الحوار</string>
     <string name="chat_drop_hint">أفلت الملفات هنا لإرفاقها</string>
+    <string name="connect_proxy_username">اسم مستخدم البروكسي</string>
+    <string name="connect_proxy_password">كلمة مرور البروكسي</string>
+    <string name="connect_proxy_hint">يلزم فقط عندما يكون العنوان خلف بروكسي عكسي يطلب اسم مستخدم وكلمة مرور. اترك الحقلين فارغين في غير ذلك.</string>
+    <string name="connect_sign_in_proxy_refused">لم يقبل البروكسي العكسي اسم المستخدم وكلمة المرور هذين. تحقق منهما، ثم حاول بالرمز مجددًا.</string>
+    <string name="connect_fail_proxy_title">رفض البروكسي العكسي تسجيل الدخول</string>
+    <string name="connect_fail_proxy_auth">%1$s طلب اسم مستخدم وكلمة مرور للبروكسي العكسي، وتم رفض المحفوظين هنا. تحقق منهما في النموذج اليدوي ثم اتصل مجددًا. تسجيل الدخول إلى الـ harness خطوة مختلفة — لا يمكن لأي رمز بدء تجاوز البروكسي.</string>
 </resources>

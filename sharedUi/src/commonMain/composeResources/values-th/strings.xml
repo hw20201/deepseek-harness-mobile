@@ -24,6 +24,8 @@
     <string name="connect_fail_other">เชื่อมต่อ %1$s ไม่สำเร็จ %2$s</string>
     <string name="connect_fail_pairing">รีเลย์ไม่รับโทเคนของอุปกรณ์นี้อีกแล้ว โทเคนอาจหมดอายุ หรือถูกลบออกจากรายการอุปกรณ์ของรีเลย์ จับคู่ใหม่เพื่อรับโทเคนใหม่</string>
     <string name="connect_fail_pairing_title">รีเลย์ปฏิเสธอุปกรณ์นี้</string>
+    <string name="connect_fail_proxy_auth">%1$s ขอชื่อผู้ใช้และรหัสผ่านของรีเวิร์สพร็อกซี และข้อมูลที่บันทึกไว้ที่นี่ถูกปฏิเสธ ตรวจสอบในแบบฟอร์มด้วยตนเองแล้วเชื่อมต่ออีกครั้ง การลงชื่อเข้าใช้ harness เป็นขั้นตอนที่ต่างออกไป โทเค็นเริ่มต้นใดๆ ก็ผ่านพร็อกซีไปไม่ได้</string>
+    <string name="connect_fail_proxy_title">รีเวิร์สพร็อกซีปฏิเสธการลงชื่อเข้าใช้</string>
     <string name="connect_fail_refused">%1$s ปฏิเสธการเชื่อมต่อ ถ้าไม่เปิดโหมด LAN harness จะรับการเชื่อมต่อจากคอมพิวเตอร์เครื่องนั้นเองเท่านั้น ให้เปิดโหมด LAN แล้วรีสตาร์ท harness ถ้าเคยเปลี่ยนพอร์ต ให้ตรวจว่าตรงกัน</string>
     <string name="connect_fail_relay_session">รีเลย์ที่ %1$s ยอมรับอุปกรณ์นี้แล้ว แต่ harness ที่อยู่หลังรีเลย์ไม่ยอมให้รีเลย์ลงชื่อเข้าใช้ การจับคู่ใหม่ไม่ช่วยอะไร ให้อัปเดต dsh-relay บนคอมพิวเตอร์เครื่องนั้นแล้วรีสตาร์ท dsh web</string>
     <string name="connect_fail_relay_session_title">harness ปฏิเสธรีเลย์</string>
@@ -59,6 +61,9 @@
     <string name="connect_pair_again">จับคู่อีกครั้ง</string>
     <string name="connect_paste">วาง</string>
     <string name="connect_protocol_baseline">โปรโตคอล %1$s</string>
+    <string name="connect_proxy_hint">จำเป็นเฉพาะเมื่อที่อยู่อยู่หลังรีเวิร์สพร็อกซีที่ขอชื่อผู้ใช้และรหัสผ่าน ปล่อยทั้งสองช่องว่างไว้ในกรณีอื่น</string>
+    <string name="connect_proxy_password">รหัสผ่านพร็อกซี</string>
+    <string name="connect_proxy_username">ชื่อผู้ใช้พร็อกซี</string>
     <string name="connect_reachable">เข้าถึงได้</string>
     <string name="connect_relay_discovered_hint">ยังไม่พบรีเลย์ ติดตั้งปลั๊กอิน dsh-relay ในโปรไฟล์ web ของ harness แล้วรีสตาร์ท จากนั้นค้นหาอีกครั้ง</string>
     <string name="connect_relay_encrypted">เข้ารหัสแล้ว</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">ลิงก์ตอนเริ่มทำงานหรือโทเคน</string>
     <string name="connect_sign_in_link_body">harness จะพิมพ์ลิงก์ตอนเริ่มทำงาน วางลิงก์นั้น หรือเฉพาะโทเคนหลัง ?token=</string>
     <string name="connect_sign_in_no_host">ลองเชื่อมต่อก่อน แล้วจึงลงชื่อเข้าใช้</string>
+    <string name="connect_sign_in_proxy_refused">รีเวิร์สพร็อกซีไม่ยอมรับชื่อผู้ใช้และรหัสผ่านนั้น ตรวจสอบแล้วลองใช้โทเค็นอีกครั้ง</string>
     <string name="connect_sign_in_refused">harness ไม่รับโทเคนนั้น โทเคนจะเปลี่ยนทุกครั้งที่ harness รีสตาร์ท ลองดูบรรทัดล่าสุดที่ harness แสดงตอนเริ่มทำงาน</string>
     <string name="connect_sign_in_subtitle">harness นี้ยังไม่ได้ลงชื่อเข้าใช้ให้โทรศัพท์เครื่องนี้</string>
     <string name="connect_sign_in_title">ลงชื่อเข้าใช้ harness นี้</string>

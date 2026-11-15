@@ -580,4 +580,10 @@
     <string name="shortcuts_settings">เปิดการตั้งค่า</string>
     <string name="shortcuts_close">ปิดแผ่นหรือกล่องโต้ตอบ</string>
     <string name="chat_drop_hint">วางไฟล์ที่นี่เพื่อแนบ</string>
+    <string name="connect_proxy_username">ชื่อผู้ใช้พร็อกซี</string>
+    <string name="connect_proxy_password">รหัสผ่านพร็อกซี</string>
+    <string name="connect_proxy_hint">จำเป็นเฉพาะเมื่อที่อยู่อยู่หลังรีเวิร์สพร็อกซีที่ขอชื่อผู้ใช้และรหัสผ่าน ปล่อยทั้งสองช่องว่างไว้ในกรณีอื่น</string>
+    <string name="connect_sign_in_proxy_refused">รีเวิร์สพร็อกซีไม่ยอมรับชื่อผู้ใช้และรหัสผ่านนั้น ตรวจสอบแล้วลองใช้โทเค็นอีกครั้ง</string>
+    <string name="connect_fail_proxy_title">รีเวิร์สพร็อกซีปฏิเสธการลงชื่อเข้าใช้</string>
+    <string name="connect_fail_proxy_auth">%1$s ขอชื่อผู้ใช้และรหัสผ่านของรีเวิร์สพร็อกซี และข้อมูลที่บันทึกไว้ที่นี่ถูกปฏิเสธ ตรวจสอบในแบบฟอร์มด้วยตนเองแล้วเชื่อมต่ออีกครั้ง การลงชื่อเข้าใช้ harness เป็นขั้นตอนที่ต่างออกไป โทเค็นเริ่มต้นใดๆ ก็ผ่านพร็อกซีไปไม่ได้</string>
 </resources>
