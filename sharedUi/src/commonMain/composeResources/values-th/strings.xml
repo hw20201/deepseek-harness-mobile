@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">รีเลย์ที่จับคู่แล้ว</string>
     <string name="connect_relay_remembered_empty">รีเลย์ที่คุณจับคู่จะแสดงที่นี่</string>
     <string name="connect_relay_scan">ค้นหารีเลย์</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">ยังไม่ได้จับคู่</string>
     <string name="connect_remembered">ล่าสุด</string>
     <string name="connect_remembered_empty">harness ที่คุณเชื่อมต่อจะแสดงที่นี่</string>

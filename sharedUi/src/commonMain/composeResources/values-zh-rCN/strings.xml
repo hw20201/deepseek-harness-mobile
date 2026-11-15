@@ -53,7 +53,7 @@
     <string name="connect_lost_reconnecting">正在重新连接 %1$s</string>
     <string name="connect_lost_retry_now">立即重试</string>
     <string name="connect_lost_tag">正在重连</string>
-    <string name="connect_manual_paste_hint">粘贴 dsh web 打印的链接（含令牌），即可同时完成登录。</string>
+    <string name="connect_manual_paste_hint">粘贴 dsh web 打印的链接（含令牌），即可同时完成登录。反向代理的 https:// 地址也可以贴在这里。</string>
     <string name="connect_manual_title">手动连接</string>
     <string name="connect_mode_lan">局域网</string>
     <string name="connect_mode_loopback">本机</string>
@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">已配对的中继</string>
     <string name="connect_relay_remembered_empty">配对过的中继会显示在这里。</string>
     <string name="connect_relay_scan">查找中继</string>
+    <string name="connect_relay_try_manual_hint">已有反向代理地址？去“局域网”里手动输入。</string>
     <string name="connect_relay_unpaired">尚未配对</string>
     <string name="connect_remembered">最近使用</string>
     <string name="connect_remembered_empty">你连接过的 harness 会显示在这里。</string>

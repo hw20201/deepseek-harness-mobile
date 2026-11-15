@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">পেয়ার করা রিলে</string>
     <string name="connect_relay_remembered_empty">আপনি যেসব রিলের সঙ্গে পেয়ার করবেন, সেগুলো এখানে দেখা যাবে।</string>
     <string name="connect_relay_scan">রিলে খুঁজুন</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">এখনও পেয়ার করা হয়নি</string>
     <string name="connect_remembered">সাম্প্রতিক</string>
     <string name="connect_remembered_empty">আপনি যেসব harness-এ সংযোগ করবেন, সেগুলো এখানে দেখা যাবে।</string>

@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">Сопряжённые реле</string>
     <string name="connect_relay_remembered_empty">Здесь появятся реле, с которыми вы выполните сопряжение.</string>
     <string name="connect_relay_scan">Найти реле</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">Ещё не сопряжено</string>
     <string name="connect_remembered">Недавние</string>
     <string name="connect_remembered_empty">Здесь появятся harness-серверы, к которым вы подключались.</string>

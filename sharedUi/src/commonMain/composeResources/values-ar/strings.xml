@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">المُرحِّلات المقترنة</string>
     <string name="connect_relay_remembered_empty">ستظهر هنا المُرحِّلات التي تقترن بها.</string>
     <string name="connect_relay_scan">البحث عن مُرحِّلات</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">غير مقترن بعد</string>
     <string name="connect_remembered">الأخيرة</string>
     <string name="connect_remembered_empty">ستظهر هنا الخوادم التي تتصل بها.</string>

@@ -71,20 +71,21 @@ class ContentEncryptionService @Inject constructor(
 ) {
     /** Live state for the Settings card. */
     val state: Flow<ContentEncryptionState> = dataStore.data.map { prefs ->
-        val key = runCatching { withContext(Dispatchers.Default) { keyStore.existingKey() } }.getOrNull()
+        val key = runCatching { withContext(Dispatchers.Default) { keyStore.loadExisting() } }.getOrNull()
         ContentEncryptionState(
             enabled = prefs[Keys.ENABLED] ?: false,
             decryptorReady = prefs[Keys.DECRYPTOR_READY],
             keyReady = key != null,
-            keyFingerprint = key?.let { ContentCrypto.fingerprint(it) },
+            // A fingerprint must never be able to take the Settings card down with it: if
+            // the key ever surprises this call, the line is simply not shown.
+            keyFingerprint = key?.let { runCatching { ContentCrypto.fingerprint(it) }.getOrNull() },
             keyCreatedAt = prefs[Keys.KEY_CREATED_AT] ?: 0L,
         )
     }
 
     /** The content key, generating it on first use and stamping when it was made. */
     suspend fun ensureKey(): SecretKey {
-        val existing = withContext(Dispatchers.Default) { keyStore.existingKey() }
-        if (existing != null) return existing
+        keyStore.loadExisting()?.let { return it }
         val fresh = withContext(Dispatchers.Default) { keyStore.key() }
         dataStore.edit { prefs ->
             if ((prefs[Keys.KEY_CREATED_AT] ?: 0L) == 0L) prefs[Keys.KEY_CREATED_AT] = System.currentTimeMillis()
@@ -158,7 +159,7 @@ class ContentEncryptionService @Inject constructor(
 
     /** A passphrase-encrypted backup line for the current key. Null when there is no key yet. */
     suspend fun exportBackup(passphrase: String): String? {
-        val key = withContext(Dispatchers.Default) { keyStore.existingKey() } ?: return null
+        val key = withContext(Dispatchers.Default) { keyStore.loadExisting() } ?: return null
         return withContext(Dispatchers.Default) { ContentKeyBackup.exportBackup(key, passphrase) }
     }
 

@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">Relais appairés</string>
     <string name="connect_relay_remembered_empty">Les relais que vous appairez apparaîtront ici.</string>
     <string name="connect_relay_scan">Chercher des relais</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">Pas encore appairé</string>
     <string name="connect_remembered">Récents</string>
     <string name="connect_remembered_empty">Les harness auxquels vous vous connectez apparaîtront ici.</string>

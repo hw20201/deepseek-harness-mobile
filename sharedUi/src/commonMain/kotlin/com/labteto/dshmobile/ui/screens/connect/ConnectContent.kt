@@ -110,6 +110,7 @@ import com.labteto.dshmobile.shared.resources.connect_relay_refused_hint
 import com.labteto.dshmobile.shared.resources.connect_relay_remembered
 import com.labteto.dshmobile.shared.resources.connect_relay_remembered_empty
 import com.labteto.dshmobile.shared.resources.connect_relay_scan
+import com.labteto.dshmobile.shared.resources.connect_relay_try_manual_hint
 import com.labteto.dshmobile.shared.resources.connect_relay_unpaired
 import com.labteto.dshmobile.shared.resources.connect_remembered
 import com.labteto.dshmobile.shared.resources.connect_remembered_empty
@@ -933,6 +934,14 @@ private fun DiscoveredSection(
             if (!state.scanning && relayMode && state.visibleHosts.isEmpty()) {
                 Text(
                     stringResource(Res.string.connect_relay_discovered_hint),
+                    style = DsType.small13,
+                    color = colors.labelCaption,
+                )
+                // A reverse proxy is not a relay: someone who reaches this screen with an
+                // https:// address of their own has taken a wrong turn, and nothing here says
+                // where the right one is. Point at the manual entry under Local network.
+                Text(
+                    stringResource(Res.string.connect_relay_try_manual_hint),
                     style = DsType.small13,
                     color = colors.labelCaption,
                 )

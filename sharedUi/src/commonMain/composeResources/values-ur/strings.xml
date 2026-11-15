@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">پیئر کیے ہوئے ریلے</string>
     <string name="connect_relay_remembered_empty">جن ریلے سے آپ پیئر کریں گے وہ یہاں دکھائی دیں گے۔</string>
     <string name="connect_relay_scan">ریلے تلاش کریں</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">ابھی پیئر نہیں ہوا</string>
     <string name="connect_remembered">حالیہ</string>
     <string name="connect_remembered_empty">آپ جن harness سے منسلک ہوں گے وہ یہاں دکھائی دیں گے۔</string>

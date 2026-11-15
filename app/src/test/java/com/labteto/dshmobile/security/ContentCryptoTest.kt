@@ -55,4 +55,31 @@ class ContentCryptoTest {
         assertNotEquals(ContentCrypto.fingerprint(key), ContentCrypto.fingerprint(ContentCrypto.generateKey()))
         assertTrue(ContentCrypto.fingerprint(key).length == 16)
     }
+
+    /**
+     * Regression: opening Settings crashed the app with a NullPointerException.
+     *
+     * A key held inside the Android Keystore never yields its bytes (`getEncoded()` is
+     * null), and the fingerprint used to feed that null straight into
+     * `MessageDigest.digest(null)`. The Settings card generates the key on first open, so
+     * the very next state emission took the app down — every time, on every open after.
+     * The store no longer hands out such keys, but the contract is pinned here: a
+     * non-exportable key fails loudly with a clear message, never with an NPE.
+     */
+    @Test
+    fun `fingerprint of a non-exportable key fails loudly, never with an NPE`() {
+        val key = object : javax.crypto.SecretKey {
+            override fun getAlgorithm(): String = "AES"
+            override fun getFormat(): String? = null
+            override fun getEncoded(): ByteArray? = null
+        }
+        val thrown = try {
+            ContentCrypto.fingerprint(key)
+            null
+        } catch (e: IllegalStateException) {
+            e
+        }
+        assertTrue(thrown != null)
+        assertTrue(thrown!!.message!!.contains("exportable"))
+    }
 }

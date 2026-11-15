@@ -57,9 +57,17 @@ object ContentCrypto {
      * Short fingerprint of a key, for the Settings card: the first 16 hex chars of the
      * SHA-256 of the encoded key. It names the key without revealing it — two phones that
      * show the same fingerprint hold the same key, which is how a re-pair is checked.
+     *
+     * A key held inside the `AndroidKeyStore` never yields its bytes (`encoded` is null) —
+     * such a key must never reach this function: [ContentKeyStore] hands out in-memory keys
+     * precisely so the fingerprint, the backup and the envelope all have bytes to work with.
+     * Refusing loudly here, rather than the NullPointerException `digest(null)` used to
+     * throw, is what makes that contract visible if it is ever broken again.
      */
     fun fingerprint(key: SecretKey): String {
-        val digest = MessageDigest.getInstance("SHA-256").digest(key.encoded)
+        val encoded = key.encoded
+            ?: throw IllegalStateException("key has no exportable bytes; fingerprint needs them")
+        val digest = MessageDigest.getInstance("SHA-256").digest(encoded)
         return digest.take(8).joinToString("") { "%02x".format(it) }
     }
 

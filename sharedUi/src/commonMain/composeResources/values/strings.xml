@@ -53,7 +53,7 @@
     <string name="connect_lost_reconnecting">Reconnecting to %1$s</string>
     <string name="connect_lost_retry_now">Retry now</string>
     <string name="connect_lost_tag">Reconnecting</string>
-    <string name="connect_manual_paste_hint">Paste the link dsh web prints, token included, and you'll be signed in too.</string>
+    <string name="connect_manual_paste_hint">Paste the link dsh web prints, token included, and you'll be signed in too. A reverse-proxy https:// address works here as well.</string>
     <string name="connect_manual_title">Connect manually</string>
     <string name="connect_mode_lan">Local network</string>
     <string name="connect_mode_loopback">This phone</string>
@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">Paired relays</string>
     <string name="connect_relay_remembered_empty">Relays you pair with appear here.</string>
     <string name="connect_relay_scan">Find relays</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">Not paired yet</string>
     <string name="connect_remembered">Recent</string>
     <string name="connect_remembered_empty">Harnesses you connect to appear here.</string>

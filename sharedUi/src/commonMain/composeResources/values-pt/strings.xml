@@ -76,6 +76,7 @@
     <string name="connect_relay_remembered">Relays pareados</string>
     <string name="connect_relay_remembered_empty">Os relays que você parear aparecem aqui.</string>
     <string name="connect_relay_scan">Procurar relays</string>
+    <string name="connect_relay_try_manual_hint">Already have a reverse-proxy address? Enter it manually under Local network.</string>
     <string name="connect_relay_unpaired">Ainda não pareado</string>
     <string name="connect_remembered">Recentes</string>
     <string name="connect_remembered_empty">Os harness aos quais você se conectar aparecerão aqui.</string>
