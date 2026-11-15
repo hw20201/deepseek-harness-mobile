@@ -8,6 +8,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.labteto.dshmobile.ui.components.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,6 +77,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.labteto.dshmobile.BuildConfig
 import com.labteto.dshmobile.R
+import com.labteto.dshmobile.core.wire.dto.LlmDiscoveredModel
+import com.labteto.dshmobile.providers.BaseUrlProblem
+import com.labteto.dshmobile.providers.DiscoverOutcome
+import com.labteto.dshmobile.providers.PROVIDER_SETTINGS_NS
+import com.labteto.dshmobile.providers.ProviderModelDraft
+import com.labteto.dshmobile.providers.ProviderOutcome
+import com.labteto.dshmobile.providers.ProviderProtocols
+import com.labteto.dshmobile.providers.ProviderRow
+import com.labteto.dshmobile.providers.impliedProtocol
+import com.labteto.dshmobile.providers.isValidRouteId
+import com.labteto.dshmobile.providers.normalizeBaseUrl
+import com.labteto.dshmobile.providers.redundantSuffixHint
+import com.labteto.dshmobile.providers.validateBaseUrl
 import com.labteto.dshmobile.connection.AppSettings
 import com.labteto.dshmobile.security.BackupImportResult
 import com.labteto.dshmobile.security.PasskeyOutcome
@@ -295,6 +309,8 @@ fun SettingsScreen(onClose: () -> Unit, viewModel: SettingsViewModel = hiltViewM
                 }
 
                 SecurityCard(viewModel)
+
+                ModelProvidersCard(viewModel)
 
                 // Only on a phone that has Termux: everything on this card goes through it.
                 if (viewModel.termuxInstalled) {
@@ -1509,5 +1525,952 @@ private fun SecurityCard(viewModel: SettingsViewModel) {
                 )
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Model providers
+// ---------------------------------------------------------------------------
+
+/**
+ * Model providers, in the existing Settings page.
+ *
+ * A card like the others: the configured providers, an Add button, and the add/edit
+ * dialogs. Adding one writes the provider profile to the harness (`llm-pi-ai`) and
+ * the key to its credential store; the model picker reads `session/modelCatalog`,
+ * which is re-read after a save, so a new provider's models appear there without
+ * reopening the session. Nothing here redesigns the page.
+ */
+@Composable
+private fun ModelProvidersCard(viewModel: SettingsViewModel) {
+    val colors = DsTheme.colors
+    val toast = rememberDsToast()
+    val scope = rememberCoroutineScope()
+    val providers by viewModel.providersState.collectAsStateWithLifecycle()
+    val done = stringResource(R.string.common_done)
+    val offline = stringResource(R.string.common_offline)
+    val conflict = stringResource(R.string.providers_conflict)
+    val configuredLabel = stringResource(R.string.providers_configured)
+    val notConfiguredLabel = stringResource(R.string.providers_not_configured)
+    val keySetLabel = stringResource(R.string.providers_key_set)
+    val noKeyLabel = stringResource(R.string.providers_no_key)
+
+    var addOpen by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<ProviderRow?>(null) }
+
+    // The card cannot show its real state without reading the harness.
+    LaunchedEffect(Unit) {
+        viewModel.refreshProviders()
+    }
+
+    fun providerToast(outcome: ProviderOutcome) {
+        when (outcome) {
+            ProviderOutcome.Ok -> toast.second(done)
+            ProviderOutcome.Offline -> toast.second(offline)
+            ProviderOutcome.Conflict -> toast.second(conflict)
+            is ProviderOutcome.Failed -> toast.second(outcome.message)
+        }
+    }
+
+    fun statusOf(row: ProviderRow): String {
+        val parts = mutableListOf(if (row.configured) configuredLabel else notConfiguredLabel)
+        when (row.keySet) {
+            true -> parts += keySetLabel
+            false -> parts += noKeyLabel
+            null -> Unit
+        }
+        return parts.joinToString(" · ")
+    }
+
+    SettingsCard(stringResource(R.string.settings_models)) {
+        Text(
+            stringResource(R.string.providers_body),
+            style = DsType.small13,
+            color = colors.labelSecondary,
+        )
+        if (!providers.connected) {
+            Text(offline, style = DsType.small13, color = colors.labelTertiary)
+        } else if (providers.loading && providers.rows.isEmpty()) {
+            Text(
+                stringResource(R.string.providers_loading),
+                style = DsType.small13,
+                color = colors.labelTertiary,
+            )
+        } else if (providers.rows.isEmpty()) {
+            Text(
+                stringResource(R.string.providers_empty),
+                style = DsType.small13,
+                color = colors.labelTertiary,
+            )
+        } else {
+            providers.rows.forEach { row ->
+                ProviderRowItem(
+                    row = row,
+                    status = statusOf(row),
+                    onClick = if (row.editable) ({ editing = row }) else null,
+                )
+            }
+        }
+        providers.error?.let { error ->
+            Text(error, style = DsType.caption11, color = colors.warnLabel)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.small)) {
+            DsButton(
+                text = stringResource(R.string.providers_add),
+                onClick = { addOpen = true },
+                enabled = providers.connected,
+                variant = DsButtonVariant.Outline,
+                size = DsButtonSize.Small,
+            )
+            DsButton(
+                text = stringResource(R.string.providers_refresh),
+                onClick = { scope.launch { providerToast(viewModel.refreshProviders()) } },
+                enabled = providers.connected,
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+            )
+        }
+    }
+
+    if (addOpen) {
+        ProviderAddDialog(
+            viewModel = viewModel,
+            onDismiss = { addOpen = false },
+            onSaved = { outcome ->
+                providerToast(outcome)
+                if (outcome is ProviderOutcome.Ok) addOpen = false
+            },
+        )
+    }
+    editing?.let { row ->
+        ProviderEditDialog(
+            viewModel = viewModel,
+            row = row,
+            onDismiss = { editing = null },
+            onSaved = { outcome ->
+                providerToast(outcome)
+                if (outcome is ProviderOutcome.Ok) editing = null
+            },
+        )
+    }
+}
+
+/** One configured provider: name, route id, and the status line. Tappable when editable. */
+@Composable
+private fun ProviderRowItem(row: ProviderRow, status: String, onClick: (() -> Unit)?) {
+    val colors = DsTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DsShapes.block)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(vertical = DsSpacing.xsmall),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.small),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                row.displayName,
+                style = DsType.std14Strong,
+                color = colors.labelPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                row.provider,
+                style = DsType.mono12,
+                color = colors.labelTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(status, style = DsType.caption11, color = colors.labelTertiary)
+        }
+        if (onClick != null) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = colors.labelTertiary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/** A model row with a check box: picked or not, toggled by tapping the row. */
+@Composable
+private fun ModelPickRow(id: String, name: String?, picked: Boolean, onToggle: () -> Unit) {
+    val colors = DsTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DsShapes.block)
+            .clickable { onToggle() }
+            .padding(vertical = DsSpacing.xsmall),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.small),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(if (picked) colors.accent else Color.Transparent)
+                .border(1.dp, if (picked) colors.accent else colors.borderL2, RoundedCornerShape(4.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (picked) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = colors.bgBase,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                id,
+                style = DsType.mono12,
+                color = colors.labelPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!name.isNullOrBlank() && name != id) {
+                Text(
+                    name,
+                    style = DsType.caption11,
+                    color = colors.labelTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private enum class ProviderAddMode { CLAIM, CUSTOM }
+
+/**
+ * The add-provider dialog: claim a built-in route, or declare a custom model API.
+ *
+ * The key is optional in both modes, exactly as the web UI allows — a route with no
+ * key is written without `apiKeyEnv` and cannot serve until a key is set on the edit
+ * dialog. The endpoint check runs before the save, so a doubled path (`/v1/messages`
+ * on a Claude endpoint, `/chat/completions` on an OpenAI one) is caught while the
+ * user is still looking at the field.
+ */
+@Composable
+private fun ProviderAddDialog(
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit,
+    onSaved: (ProviderOutcome) -> Unit,
+) {
+    val colors = DsTheme.colors
+    val scope = rememberCoroutineScope()
+    val providers by viewModel.providersState.collectAsStateWithLifecycle()
+
+    val claimLabel = stringResource(R.string.providers_claim)
+    val customLabel = stringResource(R.string.providers_custom)
+    val routeHint = stringResource(R.string.providers_route_hint)
+    val routeTaken = stringResource(R.string.providers_route_taken)
+    val endpointHint = stringResource(R.string.providers_endpoint_hint)
+    val endpointInvalid = stringResource(R.string.providers_endpoint_invalid)
+    val endpointSuffix = stringResource(R.string.providers_endpoint_suffix)
+    val noModels = stringResource(R.string.providers_no_models)
+    val fetchEmpty = stringResource(R.string.providers_fetch_empty)
+    val offline = stringResource(R.string.common_offline)
+    val cancel = stringResource(R.string.common_cancel)
+    val save = stringResource(R.string.common_save)
+    val protocolLabel = stringResource(R.string.providers_protocol)
+    val protocolNames = mapOf(
+        ProviderProtocols.OPENAI_COMPLETIONS to stringResource(R.string.providers_protocol_openai_completions),
+        ProviderProtocols.OPENAI_RESPONSES to stringResource(R.string.providers_protocol_openai_responses),
+        ProviderProtocols.ANTHROPIC_MESSAGES to stringResource(R.string.providers_protocol_anthropic),
+    )
+
+    var mode by remember { mutableStateOf(ProviderAddMode.CLAIM) }
+    var claimRoute by remember { mutableStateOf<String?>(null) }
+    var route by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    var baseUrl by remember { mutableStateOf("") }
+    var api by remember { mutableStateOf(ProviderProtocols.OPENAI_COMPLETIONS) }
+    var key by remember { mutableStateOf("") }
+    var manualModelId by remember { mutableStateOf("") }
+    var pickedModels by remember { mutableStateOf(listOf<ProviderModelDraft>()) }
+    var discovered by remember { mutableStateOf(listOf<LlmDiscoveredModel>()) }
+    var fetching by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val claimRow = providers.claimable.firstOrNull { it.provider == claimRoute }
+    val protocol = if (mode == ProviderAddMode.CLAIM) {
+        claimRow?.let { impliedProtocol(it.provider, it.api) } ?: ProviderProtocols.OPENAI_COMPLETIONS
+    } else {
+        api
+    }
+
+    fun endpointError(protocol: String, endpoint: String): String? {
+        if (endpoint.isBlank()) return null
+        return when (validateBaseUrl(protocol, endpoint)) {
+            BaseUrlProblem.NOT_HTTP_URL -> endpointInvalid
+            BaseUrlProblem.REDUNDANT_PATH_SUFFIX ->
+                endpointSuffix.format(redundantSuffixHint(protocol).orEmpty())
+            null -> null
+        }
+    }
+
+    fun validationError(): String? = when (mode) {
+        ProviderAddMode.CLAIM -> {
+            if (claimRow == null) null else endpointError(protocol, baseUrl)
+        }
+        ProviderAddMode.CUSTOM -> {
+            val trimmedRoute = route.trim()
+            if (!isValidRouteId(trimmedRoute)) return routeHint
+            if (providers.rows.any { it.provider == trimmedRoute } ||
+                providers.claimable.any { it.provider == trimmedRoute }
+            ) {
+                return routeTaken
+            }
+            if (baseUrl.isBlank()) return endpointHint
+            endpointError(api, baseUrl) ?: if (pickedModels.isEmpty()) noModels else null
+        }
+    }
+
+    fun toggleDiscovered(model: LlmDiscoveredModel) {
+        pickedModels = if (pickedModels.any { it.id == model.id }) {
+            pickedModels.filterNot { it.id == model.id }
+        } else {
+            pickedModels + ProviderModelDraft(
+                id = model.id,
+                name = model.name,
+                contextWindow = model.contextWindow,
+                maxTokens = model.maxTokens,
+            )
+        }
+    }
+
+    fun addManualModel() {
+        val id = manualModelId.trim()
+        if (id.isBlank() || pickedModels.any { it.id == id }) return
+        pickedModels = pickedModels + ProviderModelDraft(id = id)
+        manualModelId = ""
+    }
+
+    fun fetchModels() {
+        val endpoint = normalizeBaseUrl(baseUrl)
+        scope.launch {
+            fetching = true
+            error = null
+            val outcome = when (mode) {
+                ProviderAddMode.CLAIM -> {
+                    val row = claimRow
+                    if (row == null) {
+                        fetching = false
+                        return@launch
+                    }
+                    viewModel.discoverProviderModels(
+                        settingsNs = row.settingsNs,
+                        provider = row.provider,
+                        baseUrl = endpoint.ifBlank { null },
+                        api = null,
+                        apiKey = key.ifBlank { null },
+                    )
+                }
+                ProviderAddMode.CUSTOM -> viewModel.discoverProviderModels(
+                    settingsNs = PROVIDER_SETTINGS_NS,
+                    provider = null,
+                    baseUrl = endpoint.ifBlank { null },
+                    api = api,
+                    apiKey = key.ifBlank { null },
+                )
+            }
+            fetching = false
+            when (outcome) {
+                is DiscoverOutcome.Found -> {
+                    discovered = outcome.models
+                    if (outcome.models.isEmpty()) error = fetchEmpty
+                }
+                DiscoverOutcome.Offline -> error = offline
+                is DiscoverOutcome.Failed -> error = outcome.message
+            }
+        }
+    }
+
+    fun save() {
+        scope.launch {
+            busy = true
+            error = null
+            val outcome = when (mode) {
+                ProviderAddMode.CLAIM -> {
+                    val row = claimRow
+                    if (row == null) {
+                        busy = false
+                        return@launch
+                    }
+                    viewModel.saveClaimedProvider(
+                        row = row,
+                        api = protocol,
+                        baseUrl = baseUrl.trim().ifBlank { null },
+                        key = key.ifBlank { null },
+                        models = pickedModels.ifEmpty { null },
+                    )
+                }
+                ProviderAddMode.CUSTOM -> viewModel.saveCustomProvider(
+                    route = route.trim(),
+                    displayName = displayName.trim().ifBlank { null },
+                    baseUrl = normalizeBaseUrl(baseUrl),
+                    api = api,
+                    models = pickedModels,
+                    key = key.ifBlank { null },
+                )
+            }
+            busy = false
+            onSaved(outcome)
+        }
+    }
+
+    val validation = validationError()
+    val canSave = validation == null && !busy && (mode == ProviderAddMode.CUSTOM || claimRow != null)
+    val canFetch = !fetching && !busy && when (mode) {
+        ProviderAddMode.CLAIM -> claimRow != null
+        ProviderAddMode.CUSTOM -> baseUrl.isNotBlank() && endpointError(api, baseUrl) == null
+    }
+
+    DsDialog(
+        title = stringResource(R.string.providers_add),
+        onDismiss = onDismiss,
+        body = {
+            DsSegmented(
+                segments = listOf(
+                    DsSegment(ProviderAddMode.CLAIM.name, claimLabel),
+                    DsSegment(ProviderAddMode.CUSTOM.name, customLabel),
+                ),
+                selectedKey = mode.name,
+                onSelect = {
+                    mode = ProviderAddMode.valueOf(it)
+                    // The picked models belong to the mode they were picked in.
+                    pickedModels = emptyList()
+                    discovered = emptyList()
+                },
+                role = Role.Tab,
+                stretch = true,
+                maxLabelLines = 2,
+                minSegmentHeight = 40.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            when (mode) {
+                ProviderAddMode.CLAIM -> {
+                    if (providers.claimable.isEmpty()) {
+                        Text(
+                            stringResource(R.string.providers_no_claimable),
+                            style = DsType.small13,
+                            color = colors.labelTertiary,
+                            modifier = Modifier.padding(top = DsSpacing.small),
+                        )
+                    } else {
+                        providers.claimable.forEach { row ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(DsShapes.block)
+                                    .clickable {
+                                        claimRoute = row.provider
+                                        discovered = emptyList()
+                                        pickedModels = emptyList()
+                                    }
+                                    .padding(vertical = DsSpacing.xsmall),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(DsSpacing.small),
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        row.displayName,
+                                        style = DsType.std14Strong,
+                                        color = colors.labelPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        row.provider,
+                                        style = DsType.mono12,
+                                        color = colors.labelTertiary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                if (row.provider == claimRoute) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = colors.accent,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    claimRow?.let { row ->
+                        Text(
+                            "$protocolLabel: ${protocolNames[protocol].orEmpty()}",
+                            style = DsType.small13,
+                            color = colors.labelSecondary,
+                            modifier = Modifier.padding(top = DsSpacing.small),
+                        )
+                        OutlinedTextField(
+                            value = baseUrl,
+                            onValueChange = { baseUrl = it },
+                            label = { Text(stringResource(R.string.providers_endpoint)) },
+                            supportingText = { Text(endpointHint) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = key,
+                            onValueChange = { key = it },
+                            label = { Text(stringResource(R.string.providers_api_key)) },
+                            supportingText = { Text(stringResource(R.string.providers_api_key_hint)) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                ProviderAddMode.CUSTOM -> {
+                    OutlinedTextField(
+                        value = route,
+                        onValueChange = { route = it },
+                        label = { Text(stringResource(R.string.providers_route)) },
+                        supportingText = { Text(routeHint) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it },
+                        label = { Text(stringResource(R.string.providers_display_name)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = baseUrl,
+                        onValueChange = { baseUrl = it },
+                        label = { Text(stringResource(R.string.providers_endpoint)) },
+                        supportingText = { Text(endpointHint) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        protocolLabel,
+                        style = DsType.label12,
+                        color = colors.labelTertiary,
+                        modifier = Modifier.padding(top = DsSpacing.small),
+                    )
+                    DsSegmented(
+                        segments = ProviderProtocols.ALL.map { DsSegment(it, protocolNames[it].orEmpty()) },
+                        selectedKey = api,
+                        onSelect = { api = it },
+                        role = Role.Tab,
+                        stretch = true,
+                        maxLabelLines = 2,
+                        minSegmentHeight = 40.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = key,
+                        onValueChange = { key = it },
+                        label = { Text(stringResource(R.string.providers_api_key)) },
+                        supportingText = { Text(stringResource(R.string.providers_api_key_hint)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+            // The model picker: fetched candidates to pick from, plus a manual id field.
+            // A claim with nothing picked uses the route's built-in catalog; a custom
+            // route needs at least one model.
+            if ((mode == ProviderAddMode.CLAIM && claimRow != null) || mode == ProviderAddMode.CUSTOM) {
+                Text(
+                    stringResource(R.string.providers_models),
+                    style = DsType.label12,
+                    color = colors.labelTertiary,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+                if (pickedModels.isEmpty()) {
+                    Text(
+                        stringResource(R.string.providers_no_models),
+                        style = DsType.small13,
+                        color = colors.labelTertiary,
+                    )
+                } else {
+                    pickedModels.forEach { model ->
+                        ModelPickRow(
+                            id = model.id,
+                            name = model.name,
+                            picked = true,
+                            onToggle = { pickedModels = pickedModels.filterNot { it.id == model.id } },
+                        )
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.small),
+                ) {
+                    OutlinedTextField(
+                        value = manualModelId,
+                        onValueChange = { manualModelId = it },
+                        label = { Text(stringResource(R.string.providers_model_id)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DsButton(
+                        text = stringResource(R.string.common_add),
+                        onClick = ::addManualModel,
+                        enabled = manualModelId.isNotBlank(),
+                        variant = DsButtonVariant.Outline,
+                        size = DsButtonSize.Small,
+                    )
+                }
+                DsButton(
+                    text = stringResource(R.string.providers_fetch_models),
+                    onClick = ::fetchModels,
+                    enabled = canFetch,
+                    variant = DsButtonVariant.Ghost,
+                    size = DsButtonSize.Small,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+                if (fetching) {
+                    Text(
+                        stringResource(R.string.providers_loading),
+                        style = DsType.small13,
+                        color = colors.labelTertiary,
+                    )
+                }
+                discovered.forEach { model ->
+                    val picked = pickedModels.any { it.id == model.id }
+                    ModelPickRow(
+                        id = model.id,
+                        name = model.name,
+                        picked = picked,
+                        onToggle = { toggleDiscovered(model) },
+                    )
+                }
+            }
+            error?.let { message ->
+                Text(
+                    message,
+                    style = DsType.caption11,
+                    color = colors.warnLabel,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+            }
+        },
+        actions = {
+            DsButton(
+                text = cancel,
+                onClick = onDismiss,
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+            )
+            DsButton(
+                text = save,
+                onClick = ::save,
+                enabled = canSave,
+                variant = DsButtonVariant.Outline,
+                size = DsButtonSize.Small,
+            )
+        },
+    )
+}
+
+/**
+ * The edit dialog for one configured provider: change the endpoint override or the
+ * key, replace the model list, or remove the provider. The key and the endpoint
+ * start from what is stored; a blank key keeps the current key, a blank endpoint
+ * clears the override.
+ */
+@Composable
+private fun ProviderEditDialog(
+    viewModel: SettingsViewModel,
+    row: ProviderRow,
+    onDismiss: () -> Unit,
+    onSaved: (ProviderOutcome) -> Unit,
+) {
+    val colors = DsTheme.colors
+    val scope = rememberCoroutineScope()
+
+    val endpointHint = stringResource(R.string.providers_endpoint_hint)
+    val endpointInvalid = stringResource(R.string.providers_endpoint_invalid)
+    val endpointSuffix = stringResource(R.string.providers_endpoint_suffix)
+    val endpointKeep = stringResource(R.string.providers_endpoint_keep)
+    val keyKeep = stringResource(R.string.providers_key_keep)
+    val fetchEmpty = stringResource(R.string.providers_fetch_empty)
+    val offline = stringResource(R.string.common_offline)
+    val cancel = stringResource(R.string.common_cancel)
+    val save = stringResource(R.string.common_save)
+    val protocolLabel = stringResource(R.string.providers_protocol)
+    val protocolNames = mapOf(
+        ProviderProtocols.OPENAI_COMPLETIONS to stringResource(R.string.providers_protocol_openai_completions),
+        ProviderProtocols.OPENAI_RESPONSES to stringResource(R.string.providers_protocol_openai_responses),
+        ProviderProtocols.ANTHROPIC_MESSAGES to stringResource(R.string.providers_protocol_anthropic),
+    )
+
+    var baseUrl by remember { mutableStateOf(row.baseUrl.orEmpty()) }
+    var key by remember { mutableStateOf("") }
+    var pickedModels by remember { mutableStateOf(row.modelIds.map { ProviderModelDraft(id = it) }) }
+    var modelsTouched by remember { mutableStateOf(false) }
+    var manualModelId by remember { mutableStateOf("") }
+    var discovered by remember { mutableStateOf(listOf<LlmDiscoveredModel>()) }
+    var fetching by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var removeConfirm by remember { mutableStateOf(false) }
+
+    val protocol = impliedProtocol(row.provider, row.api)
+
+    fun endpointError(): String? {
+        if (baseUrl.isBlank()) return null
+        return when (validateBaseUrl(protocol, baseUrl)) {
+            BaseUrlProblem.NOT_HTTP_URL -> endpointInvalid
+            BaseUrlProblem.REDUNDANT_PATH_SUFFIX ->
+                endpointSuffix.format(redundantSuffixHint(protocol).orEmpty())
+            null -> null
+        }
+    }
+
+    fun toggleDiscovered(model: LlmDiscoveredModel) {
+        modelsTouched = true
+        pickedModels = if (pickedModels.any { it.id == model.id }) {
+            pickedModels.filterNot { it.id == model.id }
+        } else {
+            pickedModels + ProviderModelDraft(
+                id = model.id,
+                name = model.name,
+                contextWindow = model.contextWindow,
+                maxTokens = model.maxTokens,
+            )
+        }
+    }
+
+    fun addManualModel() {
+        val id = manualModelId.trim()
+        if (id.isBlank() || pickedModels.any { it.id == id }) return
+        modelsTouched = true
+        pickedModels = pickedModels + ProviderModelDraft(id = id)
+        manualModelId = ""
+    }
+
+    fun fetchModels() {
+        scope.launch {
+            fetching = true
+            error = null
+            val outcome = viewModel.discoverProviderModels(
+                settingsNs = row.settingsNs,
+                provider = row.provider,
+                baseUrl = normalizeBaseUrl(baseUrl).ifBlank { null },
+                api = null,
+                apiKey = key.ifBlank { null },
+            )
+            fetching = false
+            when (outcome) {
+                is DiscoverOutcome.Found -> {
+                    discovered = outcome.models
+                    if (outcome.models.isEmpty()) error = fetchEmpty
+                }
+                DiscoverOutcome.Offline -> error = offline
+                is DiscoverOutcome.Failed -> error = outcome.message
+            }
+        }
+    }
+
+    fun save() {
+        scope.launch {
+            busy = true
+            error = null
+            val outcome = viewModel.saveClaimedProvider(
+                row = row,
+                api = protocol,
+                baseUrl = baseUrl,
+                key = key.ifBlank { null },
+                models = if (modelsTouched) pickedModels else null,
+            )
+            busy = false
+            onSaved(outcome)
+        }
+    }
+
+    fun remove() {
+        scope.launch {
+            busy = true
+            val outcome = viewModel.removeProvider(row)
+            busy = false
+            removeConfirm = false
+            onSaved(outcome)
+        }
+    }
+
+    val validation = endpointError()
+    val canSave = validation == null && !busy
+
+    DsDialog(
+        title = row.displayName,
+        onDismiss = onDismiss,
+        body = {
+            Text(
+                row.provider,
+                style = DsType.mono12,
+                color = colors.labelTertiary,
+            )
+            Text(
+                "$protocolLabel: ${protocolNames[protocol].orEmpty()}",
+                style = DsType.small13,
+                color = colors.labelSecondary,
+                modifier = Modifier.padding(top = DsSpacing.small),
+            )
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it },
+                label = { Text(stringResource(R.string.providers_endpoint)) },
+                supportingText = { Text("$endpointHint $endpointKeep") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = key,
+                onValueChange = { key = it },
+                label = { Text(stringResource(R.string.providers_api_key)) },
+                supportingText = { Text(keyKeep) },
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                stringResource(R.string.providers_models),
+                style = DsType.label12,
+                color = colors.labelTertiary,
+                modifier = Modifier.padding(top = DsSpacing.small),
+            )
+            if (pickedModels.isEmpty()) {
+                Text(
+                    stringResource(R.string.providers_no_models),
+                    style = DsType.small13,
+                    color = colors.labelTertiary,
+                )
+            } else {
+                pickedModels.forEach { model ->
+                    ModelPickRow(
+                        id = model.id,
+                        name = model.name,
+                        picked = true,
+                        onToggle = {
+                            modelsTouched = true
+                            pickedModels = pickedModels.filterNot { it.id == model.id }
+                        },
+                    )
+                }
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.small),
+            ) {
+                OutlinedTextField(
+                    value = manualModelId,
+                    onValueChange = { manualModelId = it },
+                    label = { Text(stringResource(R.string.providers_model_id)) },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                DsButton(
+                    text = stringResource(R.string.common_add),
+                    onClick = ::addManualModel,
+                    enabled = manualModelId.isNotBlank(),
+                    variant = DsButtonVariant.Outline,
+                    size = DsButtonSize.Small,
+                )
+            }
+            DsButton(
+                text = stringResource(R.string.providers_fetch_models),
+                onClick = ::fetchModels,
+                enabled = !fetching && !busy,
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+                modifier = Modifier.padding(top = DsSpacing.small),
+            )
+            if (fetching) {
+                Text(
+                    stringResource(R.string.providers_loading),
+                    style = DsType.small13,
+                    color = colors.labelTertiary,
+                )
+            }
+            discovered.forEach { model ->
+                val picked = pickedModels.any { it.id == model.id }
+                ModelPickRow(
+                    id = model.id,
+                    name = model.name,
+                    picked = picked,
+                    onToggle = { toggleDiscovered(model) },
+                )
+            }
+            error?.let { message ->
+                Text(
+                    message,
+                    style = DsType.caption11,
+                    color = colors.warnLabel,
+                    modifier = Modifier.padding(top = DsSpacing.small),
+                )
+            }
+            DsButton(
+                text = stringResource(R.string.providers_remove),
+                onClick = { removeConfirm = true },
+                enabled = !busy,
+                variant = DsButtonVariant.Danger,
+                size = DsButtonSize.Small,
+                modifier = Modifier.padding(top = DsSpacing.small),
+            )
+        },
+        actions = {
+            DsButton(
+                text = cancel,
+                onClick = onDismiss,
+                variant = DsButtonVariant.Ghost,
+                size = DsButtonSize.Small,
+            )
+            DsButton(
+                text = save,
+                onClick = ::save,
+                enabled = canSave,
+                variant = DsButtonVariant.Outline,
+                size = DsButtonSize.Small,
+            )
+        },
+    )
+
+    if (removeConfirm) {
+        DsDialog(
+            title = stringResource(R.string.providers_remove),
+            onDismiss = { removeConfirm = false },
+            body = {
+                Text(
+                    stringResource(R.string.providers_remove_confirm, row.displayName),
+                    style = DsType.small13,
+                    color = colors.labelSecondary,
+                )
+            },
+            actions = {
+                DsButton(
+                    text = cancel,
+                    onClick = { removeConfirm = false },
+                    variant = DsButtonVariant.Ghost,
+                    size = DsButtonSize.Small,
+                )
+                DsButton(
+                    text = stringResource(R.string.providers_remove),
+                    onClick = ::remove,
+                    enabled = !busy,
+                    variant = DsButtonVariant.Danger,
+                    size = DsButtonSize.Small,
+                )
+            },
+        )
     }
 }

@@ -2991,6 +2991,16 @@ class SessionStore @Inject constructor(
     }
 
     /**
+     * Re-reads `session/modelCatalog` for the open session. The model picker shows the
+     * catalog this holds, so a provider added in Settings appears there without the
+     * session being reopened.
+     */
+    suspend fun refreshModels() {
+        val sid = currentSessionId.value ?: return
+        loadModels(sid)
+    }
+
+    /**
      * Run one complete slash-command line, optionally carrying the composer's images.
      *
      * The typert remote is the *only* command write path: `session.prompt` does not inspect its

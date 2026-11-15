@@ -21,6 +21,13 @@ import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
 import com.labteto.dshmobile.connection.ProxyCredentialStore
 import com.labteto.dshmobile.connection.RelayCredentialStore
+import com.labteto.dshmobile.data.SessionStore
+import com.labteto.dshmobile.providers.DiscoverOutcome
+import com.labteto.dshmobile.providers.ModelProviderManager
+import com.labteto.dshmobile.providers.ProviderModelDraft
+import com.labteto.dshmobile.providers.ProviderOutcome
+import com.labteto.dshmobile.providers.ProviderRow
+import com.labteto.dshmobile.providers.ProvidersUiState
 import com.labteto.dshmobile.update.UpdateChecker
 import com.labteto.dshmobile.termux.HarnessControl
 import com.labteto.dshmobile.termux.TermuxHarnessController
@@ -73,6 +80,8 @@ class SettingsViewModel @Inject constructor(
     private val passkeyManager: PasskeyManager,
     private val passkeyStore: PasskeyStore,
     private val contentEncryption: ContentEncryptionService,
+    private val modelProviders: ModelProviderManager,
+    private val sessionStore: SessionStore,
 ) : ViewModel() {
 
     /** The manual update check; see [UpdateChecker.checkNow]. */
@@ -158,6 +167,58 @@ class SettingsViewModel @Inject constructor(
 
     /** Re-pair: ask the server for the content key it already holds, after a dsh-password login. */
     suspend fun repairContentKey(): RepairOutcome = contentEncryption.repairKey()
+
+    /** Model-provider status for the Models card. */
+    val providersState: StateFlow<ProvidersUiState> = modelProviders.state
+
+    /** Re-reads the providers and the key state. */
+    suspend fun refreshProviders(): ProviderOutcome = modelProviders.refresh()
+
+    /** Asks an endpoint for its model list; the key is for this interrogation alone. */
+    suspend fun discoverProviderModels(
+        settingsNs: String,
+        provider: String?,
+        baseUrl: String?,
+        api: String?,
+        apiKey: String?,
+    ): DiscoverOutcome = modelProviders.discover(settingsNs, provider, baseUrl, api, apiKey)
+
+    /**
+     * Claims a built-in route. On success the model catalog is re-read, so the new
+     * provider's models appear in the picker without reopening the session.
+     */
+    suspend fun saveClaimedProvider(
+        row: ProviderRow,
+        api: String,
+        baseUrl: String?,
+        key: String?,
+        models: List<ProviderModelDraft>?,
+    ): ProviderOutcome {
+        val outcome = modelProviders.saveClaim(row, api, baseUrl, key, models)
+        if (outcome is ProviderOutcome.Ok) sessionStore.refreshModels()
+        return outcome
+    }
+
+    /** Declares a custom route; the catalog is re-read on success, as for a claim. */
+    suspend fun saveCustomProvider(
+        route: String,
+        displayName: String?,
+        baseUrl: String,
+        api: String,
+        models: List<ProviderModelDraft>,
+        key: String?,
+    ): ProviderOutcome {
+        val outcome = modelProviders.saveCustom(route, displayName, baseUrl, api, models, key)
+        if (outcome is ProviderOutcome.Ok) sessionStore.refreshModels()
+        return outcome
+    }
+
+    /** Removes a provider; the catalog is re-read on success, as for a save. */
+    suspend fun removeProvider(row: ProviderRow): ProviderOutcome {
+        val outcome = modelProviders.remove(row)
+        if (outcome is ProviderOutcome.Ok) sessionStore.refreshModels()
+        return outcome
+    }
 
     init {
         viewModelScope.launch {

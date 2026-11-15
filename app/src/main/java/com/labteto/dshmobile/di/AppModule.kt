@@ -5,8 +5,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.labteto.dshmobile.connection.HarnessSessionStore
+import com.labteto.dshmobile.connection.ConnectionManager
 import com.labteto.dshmobile.connection.ProxyCredentialStore
 import com.labteto.dshmobile.core.wire.WireJson
+import com.labteto.dshmobile.providers.DshApiProviderWire
+import com.labteto.dshmobile.providers.ProviderWire
+import com.labteto.dshmobile.providers.ProviderWireFactory
 import com.labteto.dshmobile.security.PasskeyGateway
 import dagger.Module
 import dagger.Provides
@@ -63,4 +67,24 @@ object AppModule {
 
     @Provides
     fun provideIoDispatcher(): kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO
+
+    /**
+     * The model-provider wire factory: the [ModelProviderManager] resolves the live
+     * client per call, so the factory only wraps a client into a [ProviderWire].
+     */
+    @Provides
+    fun provideProviderWireFactory(): ProviderWireFactory =
+        ProviderWireFactory(::DshApiProviderWire)
+
+    /**
+     * The live provider wire, or null while disconnected. A lambda rather than a
+     * binding: the client belongs to the current connection, not to the app.
+     */
+    @Provides
+    fun provideProviderWire(
+        connectionManager: ConnectionManager,
+        wireFactory: ProviderWireFactory,
+    ): () -> ProviderWire? = {
+        connectionManager.connectedApi?.let(wireFactory::create)
+    }
 }
