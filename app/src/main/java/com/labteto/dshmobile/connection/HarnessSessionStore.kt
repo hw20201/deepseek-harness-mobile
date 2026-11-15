@@ -38,6 +38,7 @@ import javax.inject.Singleton
 class HarnessSessionStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val okHttpClient: OkHttpClient,
+    private val proxyCredentials: ProxyCredentialStore,
 ) : HarnessSignIn {
     private val serializer = MapSerializer(String.serializer(), String.serializer())
 
@@ -53,7 +54,16 @@ class HarnessSessionStore @Inject constructor(
     override suspend fun pair(hostId: String, baseUrl: String, tokenInput: String): SessionExchange {
         val token = HarnessSession.tokenFrom(tokenInput)
             ?: return SessionExchange.Refused(0)
-        val outcome = HarnessSession.exchange(baseUrl, token, okHttpClient)
+        // The exchange is an ordinary GET to the proxy first: without the Basic credential a
+        // proxy in front of the harness answers 401 before the harness ever sees the token, and
+        // the refusal would read as a stale token. The credential is looked up by host id, which
+        // is why the remember step in the connect flow runs before this one.
+        val outcome = HarnessSession.exchange(
+            baseUrl,
+            token,
+            okHttpClient,
+            authorization = proxyCredentials.authorization(hostId),
+        )
         if (outcome is SessionExchange.Granted) {
             write(sessions() + (hostId to outcome.cookie))
         }

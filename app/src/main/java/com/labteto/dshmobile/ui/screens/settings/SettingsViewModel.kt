@@ -10,6 +10,7 @@ import com.labteto.dshmobile.connection.DiscoveryEngine
 import com.labteto.dshmobile.connection.HostsStore
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentialStore
 import com.labteto.dshmobile.connection.RelayCredentialStore
 import com.labteto.dshmobile.update.UpdateChecker
 import com.labteto.dshmobile.termux.HarnessControl
@@ -55,6 +56,7 @@ val LanguageOptions = listOf(
 class SettingsViewModel @Inject constructor(
     private val hostsStore: HostsStore,
     private val credentials: RelayCredentialStore,
+    private val proxyCredentials: ProxyCredentialStore,
     private val connectionManager: ConnectionManager,
     private val updateChecker: UpdateChecker,
     private val termux: TermuxHarnessController,
@@ -163,6 +165,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             hostsStore.hosts.first().forEach { hostsStore.removeHost(it.id) }
             credentials.clear()
+            // The per-host sweep above drops each proxy credential through removeHost; this
+            // catches anything orphaned by an earlier build.
+            proxyCredentials.clear()
             onDone()
         }
     }

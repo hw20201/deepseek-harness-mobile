@@ -121,7 +121,7 @@ class ConnectionManager @Inject constructor(
                 failure = ConnectFailure.from(failure, relay = host?.isRelay == true),
                 attempts = attempt,
             )
-            if (host != null && isTerminalForRelay(host, failure)) stopRetrying()
+            if (host != null && isTerminalFailure(host, failure)) stopRetrying()
         }
     }
 
@@ -194,14 +194,18 @@ class ConnectionManager @Inject constructor(
      * do not retry with backoff". A changed certificate is the same kind of fact. The loop's default
      * is to retry forever, which against a relay that revoked this device is a request every few
      * seconds until the app is killed.
+     *
+     * A refused proxy password is terminal on any host, relay or not: no retry will make the
+     * proxy accept the same wrong password, and the fix is the credential in the connect form.
      */
-    private fun isTerminalForRelay(host: HostConfig, failure: GenerationFailure): Boolean {
-        if (!host.isRelay) return false
+    private fun isTerminalFailure(host: HostConfig, failure: GenerationFailure): Boolean {
         val kind = when (failure) {
             is GenerationFailure.MuxFailed -> failure.kind
             is GenerationFailure.ReadyFailed -> TransportFailures.of(failure.error)
             is GenerationFailure.MuxTimedOut -> null
         }
+        if (kind == TransportFailure.PROXY_UNAUTHENTICATED) return true
+        if (!host.isRelay) return false
         // UNAUTHENTICATED is terminal for a different reason. Behind a relay it is the harness
         // refusing the relay's own request, not this device's credential — but nothing the phone
         // retries will make the relay sign in; that takes a relay fixed on its own computer.

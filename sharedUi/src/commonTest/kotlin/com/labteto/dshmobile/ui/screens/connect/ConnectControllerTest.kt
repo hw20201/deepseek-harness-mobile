@@ -7,6 +7,7 @@ import com.labteto.dshmobile.connection.DiscoveredHost
 import com.labteto.dshmobile.connection.HostConfig
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentials
 import com.labteto.dshmobile.connection.harnessBaseUrl
 import com.labteto.dshmobile.core.wire.SessionExchange
 import com.labteto.dshmobile.core.wire.dto.HostDescription
@@ -55,6 +56,8 @@ class ConnectControllerTest {
             useTls: Boolean,
             description: HostDescription?,
             basePath: String,
+            proxyUsername: String?,
+            proxyPassword: String?,
         ): HostConfig {
             val config = HostConfig(
                 id = "id-$host-$port",
@@ -65,6 +68,7 @@ class ConnectControllerTest {
                 useTls = useTls,
                 basePath = basePath,
                 lastHome = description?.home,
+                proxyUsername = proxyUsername,
             )
             hostList.value = listOf(config) + hostList.value.filterNot { it.baseUrl == config.baseUrl }
             return config
@@ -85,6 +89,7 @@ class ConnectControllerTest {
         var outcome: ProbeOutcome = ProbeOutcome.Refused
         var gate: CompletableDeferred<Unit>? = null
         val probed = mutableListOf<String>()
+        var probedProxy: ProxyCredentials? = null
 
         override suspend fun probe(host: String, port: Int, timeouts: ProbeTimeouts, config: HostConfig?): HostDescription? =
             (probeOutcome(host, port, timeouts, config = config) as? ProbeOutcome.Reachable)?.description
@@ -97,8 +102,10 @@ class ConnectControllerTest {
             useTls: Boolean,
             config: HostConfig?,
             basePath: String,
+            proxy: ProxyCredentials?,
         ): ProbeOutcome {
             probed += "$host:$port"
+            probedProxy = proxy
             gate?.await()
             return outcome
         }
@@ -212,6 +219,32 @@ class ConnectControllerTest {
         assertEquals(listOf("old", "current"), rig.signIn.tried)
         assertFalse(rig.controller.state.value.signInOpen)
         assertEquals("10.0.0.5:3080", rig.link.connected.single().authority)
+    }
+
+    @Test
+    fun `a typed proxy credential is probed with and remembered on success`() = runTest {
+        val rig = Rig(this)
+        runCurrent()
+        rig.network.outcome = ProbeOutcome.Reachable(HostDescription("/home/demo"))
+        rig.controller.connectManual("https://proxy.example/dsh", "443", "dsh", "secret")
+        runCurrent()
+        assertEquals(ProxyCredentials("dsh", "secret"), rig.network.probedProxy)
+        val remembered = rig.store.hostList.value.single()
+        assertEquals("dsh", remembered.proxyUsername)
+        assertEquals(listOf(remembered), rig.link.connected)
+        assertNull(rig.controller.state.value.failure)
+    }
+
+    @Test
+    fun `a proxy refusal fails as a proxy refusal and remembers nothing`() = runTest {
+        val rig = Rig(this)
+        runCurrent()
+        rig.network.outcome = ProbeOutcome.ProxyUnauthenticated
+        rig.controller.connectManual("https://proxy.example/dsh", "443", "dsh", "wrong")
+        runCurrent()
+        assertEquals(ConnectFailure.ProxyUnauthenticated, rig.controller.state.value.failure)
+        assertTrue(rig.store.hostList.value.isEmpty())
+        assertTrue(rig.link.connected.isEmpty())
     }
 
     @Test

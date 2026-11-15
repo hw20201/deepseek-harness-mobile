@@ -31,6 +31,12 @@ enum class SignInError {
     /** The harness answered and issued no session; the token is not the current process's. */
     Refused,
 
+    /**
+     * The reverse proxy in front of the harness answered 401 with a Basic challenge, so the
+     * harness never saw the token: the proxy username or password is wrong, not the token.
+     */
+    ProxyRefused,
+
     /** The exchange never reached a harness. */
     Unreachable,
 }

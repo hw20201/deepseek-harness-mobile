@@ -37,6 +37,15 @@ sealed interface ProbeOutcome {
     data object Unauthenticated : ProbeOutcome
 
     /**
+     * HTTP 401 carrying a `WWW-Authenticate: Basic` challenge — the reverse proxy in front of the
+     * harness refused the proxy username or password.
+     *
+     * Not [Unauthenticated]: the harness never saw the request, so no launch token can fix it.
+     * The fix is the proxy credential, typed into the connect form and tried again.
+     */
+    data object ProxyUnauthenticated : ProbeOutcome
+
+    /**
      * HTTP 401 from the harness that a relay is forwarding to: the relay reached upstream and was
      * refused there, not here.
      *
@@ -138,6 +147,7 @@ fun probeOutcomeOf(kind: TransportFailure?, relay: Boolean, detail: String): Pro
         // is nothing here for this phone to pair again.
         TransportFailure.UNAUTHENTICATED ->
             if (relay) ProbeOutcome.RelayUnauthenticated else ProbeOutcome.Unauthenticated
+        TransportFailure.PROXY_UNAUTHENTICATED -> ProbeOutcome.ProxyUnauthenticated
         TransportFailure.CERTIFICATE_PIN -> ProbeOutcome.CertificateChanged
         TransportFailure.REFUSED -> ProbeOutcome.Refused
         TransportFailure.TIMEOUT -> ProbeOutcome.Timeout

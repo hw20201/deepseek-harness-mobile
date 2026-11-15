@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.labteto.dshmobile.connection.ConnectMode
@@ -92,6 +93,9 @@ import com.labteto.dshmobile.shared.resources.connect_loopback_start
 import com.labteto.dshmobile.shared.resources.connect_manual_paste_hint
 import com.labteto.dshmobile.shared.resources.connect_manual_title
 import com.labteto.dshmobile.shared.resources.connect_mode_lan
+import com.labteto.dshmobile.shared.resources.connect_proxy_hint
+import com.labteto.dshmobile.shared.resources.connect_proxy_password
+import com.labteto.dshmobile.shared.resources.connect_proxy_username
 import com.labteto.dshmobile.shared.resources.connect_mode_loopback
 import com.labteto.dshmobile.shared.resources.connect_mode_relay
 import com.labteto.dshmobile.shared.resources.connect_reachable
@@ -119,6 +123,7 @@ import com.labteto.dshmobile.shared.resources.connect_sign_in
 import com.labteto.dshmobile.shared.resources.connect_sign_in_label
 import com.labteto.dshmobile.shared.resources.connect_sign_in_link_body
 import com.labteto.dshmobile.shared.resources.connect_sign_in_no_host
+import com.labteto.dshmobile.shared.resources.connect_sign_in_proxy_refused
 import com.labteto.dshmobile.shared.resources.connect_sign_in_refused
 import com.labteto.dshmobile.shared.resources.connect_sign_in_subtitle
 import com.labteto.dshmobile.shared.resources.connect_sign_in_title
@@ -183,6 +188,12 @@ fun ConnectContent(
     val haptics = rememberDsHaptics()
     // Saveable: a rotation mid-connect used to wipe a hand-typed address.
     var host by rememberSaveable { mutableStateOf(initialHost) }
+    // The reverse-proxy credential for the address above, when it sits behind a proxy that
+    // demands Basic auth. Saveable for the same reason as the host: a rotation mid-connect
+    // must not wipe a password someone has just typed. The password lives in this state only
+    // while the form is on screen; it is stored encrypted once the host is remembered.
+    var proxyUser by rememberSaveable { mutableStateOf("") }
+    var proxyPassword by rememberSaveable { mutableStateOf("") }
     // Whatever was tapped last, so a failure can offer to do it again. A failure used to end in a
     // block of advice and nothing to press; the only way to retry was to find the card again.
     var lastAttempt by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -249,6 +260,10 @@ fun ConnectContent(
                         state = state,
                         host = host,
                         onHostChange = { host = it },
+                        proxyUser = proxyUser,
+                        onProxyUserChange = { proxyUser = it },
+                        proxyPassword = proxyPassword,
+                        onProxyPasswordChange = { proxyPassword = it },
                         relayMode = relayMode,
                         loopbackMode = loopbackMode,
                         paired = paired,
@@ -341,6 +356,10 @@ private fun ConnectForm(
     state: ConnectUiState,
     host: String,
     onHostChange: (String) -> Unit,
+    proxyUser: String,
+    onProxyUserChange: (String) -> Unit,
+    proxyPassword: String,
+    onProxyPasswordChange: (String) -> Unit,
     relayMode: Boolean,
     loopbackMode: Boolean,
     paired: List<HostConfig>,
@@ -452,7 +471,11 @@ private fun ConnectForm(
                         ManualSection(
                             host = host,
                             onHostChange = onHostChange,
-                            onConnect = { recordAttempt { controller.connectManual(host, DEFAULT_PORT) } },
+                            proxyUser = proxyUser,
+                            onProxyUserChange = onProxyUserChange,
+                            proxyPassword = proxyPassword,
+                            onProxyPasswordChange = onProxyPasswordChange,
+                            onConnect = { recordAttempt { controller.connectManual(host, DEFAULT_PORT, proxyUser, proxyPassword) } },
                             connecting = state.connecting,
                         )
                     }
@@ -492,6 +515,8 @@ private fun ConnectForm(
             state = state,
             mode = state.mode,
             host = host,
+            proxyUser = proxyUser,
+            proxyPassword = proxyPassword,
             paired = paired,
             relayMode = relayMode,
             loopbackMode = loopbackMode,
@@ -1031,11 +1056,23 @@ private fun FoundHarnessCard(
     }
 }
 
-/** The design's manual entry: one monospace address field and the paste affordance beside it. */
+/**
+ * The design's manual entry: one monospace address field and the paste affordance beside it.
+ *
+ * The two proxy fields below it are for a harness behind a reverse proxy that demands Basic auth
+ * (an nginx `auth_basic` in front of a public `https://` address, say). They are always shown
+ * rather than appearing only for an `https://` address, because the address is what decides
+ * whether they are needed and it is still being typed while they are on screen; left blank they
+ * change nothing, and a remembered host keeps the credential it was given without retyping.
+ */
 @Composable
 private fun ManualSection(
     host: String,
     onHostChange: (String) -> Unit,
+    proxyUser: String,
+    onProxyUserChange: (String) -> Unit,
+    proxyPassword: String,
+    onProxyPasswordChange: (String) -> Unit,
     onConnect: () -> Unit,
     connecting: Boolean,
 ) {
@@ -1068,6 +1105,37 @@ private fun ManualSection(
         }
         Text(
             stringResource(Res.string.connect_manual_paste_hint),
+            style = DsType.xsmall12,
+            color = colors.labelTertiary,
+        )
+        InkTextField(
+            value = proxyUser,
+            onValueChange = onProxyUserChange,
+            label = stringResource(Res.string.connect_proxy_username),
+            mono = true,
+            enabled = !connecting,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Next,
+            ),
+        )
+        InkTextField(
+            value = proxyPassword,
+            onValueChange = onProxyPasswordChange,
+            label = stringResource(Res.string.connect_proxy_password),
+            mono = true,
+            enabled = !connecting,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Go,
+            ),
+            keyboardActions = KeyboardActions(onGo = { if (host.isNotBlank() && !connecting) onConnect() }),
+            visualTransformation = PasswordVisualTransformation(),
+        )
+        Text(
+            stringResource(Res.string.connect_proxy_hint),
             style = DsType.xsmall12,
             color = colors.labelTertiary,
         )
@@ -1173,6 +1241,8 @@ private fun ConnectBottomBar(
     state: ConnectUiState,
     mode: String,
     host: String,
+    proxyUser: String,
+    proxyPassword: String,
     paired: List<HostConfig>,
     relayMode: Boolean,
     loopbackMode: Boolean,
@@ -1214,7 +1284,7 @@ private fun ConnectBottomBar(
             val typed = host.trim()
             when {
                 typed.isNotEmpty() -> PrimaryAction(stringResource(Res.string.connect_button), true) {
-                    recordAttempt { controller.connectManual(host, DEFAULT_PORT) }
+                    recordAttempt { controller.connectManual(host, DEFAULT_PORT, proxyUser, proxyPassword) }
                 }
                 paired.isNotEmpty() -> PrimaryAction(stringResource(Res.string.connect_button), true) {
                     recordAttempt { controller.connectTo(paired.first()) }
@@ -1296,6 +1366,7 @@ private fun SignInSheet(
     }
     val message = when (error) {
         SignInError.Refused -> stringResource(Res.string.connect_sign_in_refused)
+        SignInError.ProxyRefused -> stringResource(Res.string.connect_sign_in_proxy_refused)
         SignInError.Unreachable -> stringResource(Res.string.connect_sign_in_unreachable)
         SignInError.NoHost -> stringResource(Res.string.connect_sign_in_no_host)
         null -> null

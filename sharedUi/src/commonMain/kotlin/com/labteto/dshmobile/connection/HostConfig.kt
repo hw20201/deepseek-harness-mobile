@@ -46,6 +46,16 @@ data class HostConfig(
     val relayDeviceId: String? = null,
     /** Epoch millis the device token expires, as the relay reported it at pairing. */
     val relayTokenExpiresAt: Long = 0L,
+    /**
+     * The username for a reverse proxy in front of this harness that demands Basic auth
+     * (nginx `auth_basic`, say). Null when there is no proxy credential.
+     *
+     * Only the username lives here, in plain DataStore like the rest of the record: a username
+     * is not a secret. The password is in [ProxyCredentialStore], Keystore-encrypted and keyed
+     * by [id], next to the relay token — the same treatment, because a proxy password guards the
+     * same power over the machine behind it.
+     */
+    val proxyUsername: String? = null,
 ) {
     /** Endpoint identity and display form, including TLS and the reverse-proxy root. */
     val authority: String get() = endpointKey(host, port, useTls, basePath)
@@ -65,6 +75,9 @@ data class HostConfig(
 
     /** Whether traffic to this endpoint travels in the clear. */
     val isPlaintext: Boolean get() = !useTls
+
+    /** Whether this endpoint sits behind a reverse proxy that demands a Basic credential. */
+    val hasProxyAuth: Boolean get() = proxyUsername != null
 }
 
 /**

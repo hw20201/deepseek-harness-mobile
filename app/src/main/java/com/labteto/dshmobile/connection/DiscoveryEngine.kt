@@ -121,6 +121,10 @@ class DiscoveryEngine @Inject constructor(
      * separates "the firewall is dropping this" from "the harness is still bound to loopback". The
      * sweep skips it (254 extra sockets to learn the same thing OkHttp will report anyway); the one
      * address a user typed is worth the ~5ms.
+     *
+     * [proxyAuthorization] is the reverse-proxy credential for *this* probe, when the caller
+     * typed one: it replaces the stored one for a remembered host, so a corrected password is
+     * probed with before it is stored, and it is the only credential a bare address can carry.
      */
     suspend fun probeOutcome(
         host: String,
@@ -130,6 +134,7 @@ class DiscoveryEngine @Inject constructor(
         useTls: Boolean = false,
         config: HostConfig? = null,
         basePath: String = "",
+        proxyAuthorization: String? = null,
     ): ProbeOutcome = withContext(Dispatchers.IO) {
         if (preflight) {
             preflight(host, port, timeouts.connectMs)?.let { return@withContext it }
@@ -141,9 +146,9 @@ class DiscoveryEngine @Inject constructor(
         // A remembered endpoint is probed through its own record, which carries the transport, the
         // pin and the credential together; a bare address has only the scheme the caller inferred.
         val client = if (config != null) {
-            clientFactory.clientFor(config, timeouts)
+            clientFactory.clientFor(config, timeouts, proxyAuthorization)
         } else {
-            clientFactory.anonymousClient(harnessBaseUrl(host, port, useTls, basePath), timeouts)
+            clientFactory.anonymousClient(harnessBaseUrl(host, port, useTls, basePath), timeouts, proxyAuthorization)
         }
         val relay = config?.isRelay == true
         // `host.describe` was the probe through 0.1.1: one call that proved the endpoint spoke the

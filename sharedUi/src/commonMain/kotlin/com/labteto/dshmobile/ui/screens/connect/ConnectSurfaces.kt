@@ -692,6 +692,7 @@ internal fun failureTitle(failure: ConnectFailure, authority: String): String? =
     failure is ConnectFailure.PairingRequired -> stringResource(Res.string.connect_fail_pairing_title)
     failure is ConnectFailure.RelayUnauthenticated -> stringResource(Res.string.connect_fail_relay_session_title)
     failure is ConnectFailure.CertificateChanged -> stringResource(Res.string.connect_fail_certificate_title)
+    failure is ConnectFailure.ProxyUnauthenticated -> stringResource(Res.string.connect_fail_proxy_title)
     authority.isBlank() -> null
     else -> stringResource(Res.string.connect_failed, authority)
 }
@@ -715,6 +716,7 @@ internal fun failureBody(failure: ConnectFailure, authority: String): String {
         ConnectFailure.PairingRequired -> stringResource(Res.string.connect_fail_pairing)
         ConnectFailure.RelayUnauthenticated -> stringResource(Res.string.connect_fail_relay_session, authority)
         ConnectFailure.CertificateChanged -> stringResource(Res.string.connect_fail_certificate, authority)
+        ConnectFailure.ProxyUnauthenticated -> stringResource(Res.string.connect_fail_proxy_auth, authority)
         ConnectFailure.DnsFailure -> stringResource(Res.string.connect_fail_dns, authority)
         ConnectFailure.NotAHarness -> stringResource(Res.string.connect_fail_not_harness, authority)
         ConnectFailure.TlsFailure -> stringResource(Res.string.connect_fail_tls, authority)
@@ -730,6 +732,9 @@ internal fun ConnectFailure.isRetryable(): Boolean = when (this) {
     ConnectFailure.CertificateChanged,
     ConnectFailure.Unauthenticated,
     ConnectFailure.RelayUnauthenticated,
+    // Retrying with the same refused proxy password cannot work; the fix is the credential in
+    // the manual form, reached by choosing another harness.
+    ConnectFailure.ProxyUnauthenticated,
     -> false
     else -> true
 }

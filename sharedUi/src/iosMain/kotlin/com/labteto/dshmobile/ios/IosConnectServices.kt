@@ -7,6 +7,7 @@ import com.labteto.dshmobile.connection.DiscoveredHost
 import com.labteto.dshmobile.connection.HostConfig
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentials
 import com.labteto.dshmobile.connection.harnessBaseUrl
 import com.labteto.dshmobile.connection.probeOutcomeOf
 import com.labteto.dshmobile.core.wire.ConnectionLoop
@@ -94,6 +95,7 @@ internal class IosConnectNetwork(
         useTls: Boolean,
         config: HostConfig?,
         basePath: String,
+        proxy: ProxyCredentials?,
     ): ProbeOutcome {
         val base = config?.baseUrl ?: harnessBaseUrl(host, port, useTls, basePath)
         val relay = config?.isRelay == true

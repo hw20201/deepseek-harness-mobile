@@ -7,6 +7,7 @@ import com.labteto.dshmobile.connection.DiscoveredHost
 import com.labteto.dshmobile.connection.HostConfig
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentials
 import com.labteto.dshmobile.connection.belongsTo
 import com.labteto.dshmobile.connection.parseHostInput
 import com.labteto.dshmobile.core.wire.SessionExchange
@@ -133,8 +134,11 @@ class ConnectController(
                     signInError = when (outcome) {
                         is SessionExchange.Granted -> null
                         // Almost always a token from an earlier harness process: it rotates on
-                        // every start and is never persisted.
-                        is SessionExchange.Refused -> SignInError.Refused
+                        // every start and is never persisted. The exception is a proxy that
+                        // refused the exchange before the harness saw the token — then the
+                        // proxy password is wrong, not the token.
+                        is SessionExchange.Refused ->
+                            if (outcome.proxyRefused) SignInError.ProxyRefused else SignInError.Refused
                         is SessionExchange.Unreachable -> SignInError.Unreachable
                     },
                     // The dialog closes on success; a failure keeps it open with the reason.
@@ -589,7 +593,17 @@ class ConnectController(
         scanJob = null
     }
 
-    fun connectManual(host: String, port: String) {
+    /**
+     * Connect to an address typed into the manual form.
+     *
+     * [proxyUsername] / [proxyPassword] are the reverse-proxy credential for a harness behind a
+     * proxy that demands Basic auth. They ride the probe in place of whatever is stored, and are
+     * remembered (password encrypted) when the attempt gets far enough to remember the host — a
+     * probe refused by the proxy remembers nothing, so a wrong password leaves no trace to
+     * correct later beyond the form itself.
+     */
+    fun connectManual(host: String, port: String, proxyUsername: String = "", proxyPassword: String = "") {
+        val proxy = ProxyCredentials(proxyUsername.trim(), proxyPassword).takeIf { it.present }
         // The field takes what people actually have — a pasted URL as readily as a bare address,
         // and the whole `dsh web: http://…?token=…` line the harness prints as readily as either.
         // A port named inside it was typed as part of this address, so it outranks the port field,
@@ -646,6 +660,7 @@ class ConnectController(
                 useTls = useTls,
                 config = known,
                 basePath = input.basePath,
+                proxy = proxy,
             )
             // The probe is a blocking call and does not notice a cancel while it runs. Whatever it
             // found, a Cancel that arrived meanwhile has already put the screen back, and a late
@@ -656,7 +671,8 @@ class ConnectController(
                 // authority so a first-time host can exchange its launch token from the dialog.
                 if (outcome is ProbeOutcome.Unauthenticated && paired == null) {
                     val target = store.rememberHost(name = input.host, host = input.host,
-                        port = portInt, isLoopback = isLoopback, useTls = useTls, basePath = input.basePath)
+                        port = portInt, isLoopback = isLoopback, useTls = useTls, basePath = input.basePath,
+                        proxyUsername = proxy?.username, proxyPassword = proxy?.password)
                     ensureActive()
                     _state.update { it.copy(remembered = it.remembered.filterNot { h -> h.id == target.id } + target) }
                     if (pastedToken != null) {
@@ -687,6 +703,8 @@ class ConnectController(
                 useTls = useTls,
                 description = outcome.description,
                 basePath = input.basePath,
+                proxyUsername = proxy?.username,
+                proxyPassword = proxy?.password,
             )
             ensureActive()
             connectTo(config)

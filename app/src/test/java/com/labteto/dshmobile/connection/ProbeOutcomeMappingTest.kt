@@ -31,6 +31,20 @@ class ProbeOutcomeMappingTest {
         )
     }
 
+    /**
+     * A 401 with a Basic challenge is the reverse proxy's refusal, not the harness's: the harness
+     * answers 401 bare, and only the proxy challenges for a username and password. It must not
+     * read as "sign in with a launch token", which the proxy would refuse before the harness
+     * could see it.
+     */
+    @Test
+    fun `a Basic-challenged 401 is the reverse proxy refusing the proxy credential`() {
+        assertEquals(
+            ProbeOutcome.ProxyUnauthenticated,
+            probeOutcomeOf(TransportFailure.PROXY_UNAUTHENTICATED, relay = false, detail = "401"),
+        )
+    }
+
     @Test
     fun `a harness reached directly keeps its own 401 and 403`() {
         assertEquals(

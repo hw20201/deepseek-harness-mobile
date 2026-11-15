@@ -24,6 +24,8 @@
     <string name="connect_fail_other">Couldn't connect to %1$s. %2$s</string>
     <string name="connect_fail_pairing">The relay no longer accepts this device's token. It may have expired or been removed from the relay's device list. Pair again to get a new one.</string>
     <string name="connect_fail_pairing_title">The relay refused this device</string>
+    <string name="connect_fail_proxy_auth">%1$s asked for a reverse-proxy username and password, and the ones saved here were refused. Check them in the manual form and connect again. The harness sign-in is a different step — no launch token can get past the proxy.</string>
+    <string name="connect_fail_proxy_title">The reverse proxy refused the sign-in</string>
     <string name="connect_fail_refused">%1$s refused the connection. The harness only listens on the computer itself unless LAN mode is on. Turn it on and restart the harness. If you changed the port, check that it matches.</string>
     <string name="connect_fail_relay_session">The relay at %1$s accepted this device, but the harness behind it refused the relay's sign-in. Pairing again won't help. Update dsh-relay on that computer and restart dsh web.</string>
     <string name="connect_fail_relay_session_title">The harness refused the relay</string>
@@ -56,6 +58,9 @@
     <string name="connect_mode_lan">Local network</string>
     <string name="connect_mode_loopback">This phone</string>
     <string name="connect_mode_relay">Relay</string>
+    <string name="connect_proxy_hint">Only needed when the address is behind a reverse proxy that asks for a username and password. Leave both blank otherwise.</string>
+    <string name="connect_proxy_password">Proxy password</string>
+    <string name="connect_proxy_username">Proxy username</string>
     <string name="connect_pair_again">Pair again</string>
     <string name="connect_paste">Paste</string>
     <string name="connect_protocol_baseline">Protocol %1$s</string>
@@ -84,6 +89,7 @@
     <string name="connect_sign_in_label">Startup link or token</string>
     <string name="connect_sign_in_link_body">The harness prints a link when it starts. Paste the link, or only the token after ?token=.</string>
     <string name="connect_sign_in_no_host">Try connecting first, then sign in.</string>
+    <string name="connect_sign_in_proxy_refused">The reverse proxy didn't accept that username and password. Check them, then try the token again.</string>
     <string name="connect_sign_in_refused">The harness didn't accept that token. It changes on every restart, so check the latest startup line.</string>
     <string name="connect_sign_in_subtitle">This harness hasn't signed this phone in yet.</string>
     <string name="connect_sign_in_title">Sign in to this harness</string>

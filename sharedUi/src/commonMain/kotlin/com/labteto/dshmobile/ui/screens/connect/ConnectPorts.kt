@@ -60,6 +60,13 @@ interface ConnectStore {
     /**
      * Remember (or refresh) one endpoint. The id is stable across reconnects: `host:port` is the
      * identity. Cached describe fields survive a call that does not supply them.
+     *
+     * [proxyUsername] is the reverse-proxy username for this endpoint; [proxyPassword] is the
+     * password typed with it. Both are null when the caller typed no proxy credential, in which
+     * case whatever the record already holds is kept — a connect that succeeds without retyping
+     * the password must not wipe the one already stored. The password is held only in transit
+     * here: the platform stores it encrypted at rest (Android: `ProxyCredentialStore`) and never
+     * hands it back through this interface.
      */
     suspend fun rememberHost(
         name: String,
@@ -69,6 +76,8 @@ interface ConnectStore {
         useTls: Boolean = false,
         description: HostDescription? = null,
         basePath: String = "",
+        proxyUsername: String? = null,
+        proxyPassword: String? = null,
     ): HostConfig
 
     /** Fold a fresh host description into the remembered entry without touching its recency. */
@@ -88,7 +97,14 @@ interface ConnectNetwork {
     /** Probe one authority; null when it is not a harness. */
     suspend fun probe(host: String, port: Int, timeouts: ProbeTimeouts, config: HostConfig? = null): HostDescription?
 
-    /** Probe one authority and keep the reason it failed. */
+    /**
+     * Probe one authority and keep the reason it failed.
+     *
+     * [proxy] is the reverse-proxy credential typed for this attempt, when the caller has one:
+     * it is sent on the probe in place of whatever is stored for [config], so correcting a wrong
+     * proxy password does not need the old one to work first. When it is null the probe uses the
+     * stored credential for a remembered host, and none for a bare address.
+     */
     suspend fun probeOutcome(
         host: String,
         port: Int,
@@ -97,6 +113,7 @@ interface ConnectNetwork {
         useTls: Boolean = false,
         config: HostConfig? = null,
         basePath: String = "",
+        proxy: ProxyCredentials? = null,
     ): ProbeOutcome
 
     /** Sweep this device's subnet on [ports], reporting progress and each find as it is confirmed. */

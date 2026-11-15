@@ -25,6 +25,7 @@ import javax.inject.Singleton
 class HostsStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val credentials: RelayCredentialStore,
+    private val proxyCredentials: ProxyCredentialStore,
     @ApplicationContext private val context: Context,
 ) {
     private object Keys {
@@ -124,6 +125,11 @@ class HostsStore @Inject constructor(
      * the id it already had. Minting a fresh UUID every time made the id useless as a list key and
      * as a handle for anything stored per host. Cached describe fields survive a call that does not
      * supply them.
+     *
+     * [proxyUsername] / [proxyPassword] are the reverse-proxy credential typed for this endpoint.
+     * Both null means the caller typed none, and whatever the record already holds is kept — a
+     * connect that succeeds without retyping the password must not wipe the one already stored.
+     * The password is stored encrypted by [ProxyCredentialStore], never in the record.
      */
     suspend fun rememberHost(
         name: String,
@@ -134,6 +140,8 @@ class HostsStore @Inject constructor(
         description: HostDescription? = null,
         relay: RelayIdentity? = null,
         basePath: String = "",
+        proxyUsername: String? = null,
+        proxyPassword: String? = null,
     ): HostConfig {
         val existing = hosts.first().firstOrNull { it.baseUrl == harnessBaseUrl(host, port, relay?.useTls ?: useTls, basePath) }
         val config = HostConfig(
@@ -145,6 +153,7 @@ class HostsStore @Inject constructor(
             isLoopback = isLoopback,
             lastConnectedAt = System.currentTimeMillis(),
             lastHome = description?.home ?: existing?.lastHome,
+            proxyUsername = proxyUsername ?: existing?.proxyUsername,
             // A fresh pairing replaces the whole relay identity rather than merging into it: a
             // re-pair mints a new device id, may move between TLS postures, and can land on a
             // regenerated key. Keeping any of the previous three would leave the record describing
@@ -156,6 +165,9 @@ class HostsStore @Inject constructor(
             relayTokenExpiresAt = relay?.tokenExpiresAt ?: existing?.relayTokenExpiresAt ?: 0L,
         )
         upsertHost(config)
+        if (proxyPassword != null && config.proxyUsername != null) {
+            proxyCredentials.put(config.id, config.proxyUsername, proxyPassword)
+        }
         return config
     }
 
@@ -184,6 +196,7 @@ class HostsStore @Inject constructor(
     suspend fun removeHost(id: String) {
         persist(hosts.first().filterNot { it.id == id })
         credentials.remove(id)
+        proxyCredentials.remove(id)
     }
 
     /**

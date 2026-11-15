@@ -40,6 +40,17 @@ sealed interface ConnectFailure {
     data object Unauthenticated : ConnectFailure
 
     /**
+     * The reverse proxy in front of the harness refused the proxy username or password (HTTP 401
+     * with a `WWW-Authenticate: Basic` challenge).
+     *
+     * Separate from [Unauthenticated] because the fix is in the connect form, not in the
+     * launch-token dialog: the harness never saw the request, so no token can satisfy it, and
+     * offering the sign-in sheet would send the person to paste a token the proxy will refuse
+     * before the harness can read it.
+     */
+    data object ProxyUnauthenticated : ConnectFailure
+
+    /**
      * A relay answered and refused this device's credential.
      *
      * The same HTTP 403 as [TrustFence] — the relay never answers 401, on purpose — so the two are
@@ -113,6 +124,7 @@ sealed interface ConnectFailure {
             // having been through `DiscoveryEngine.probeOutcome`.
             ProbeOutcome.RelayUnauthenticated -> RelayUnauthenticated
             ProbeOutcome.Unauthenticated -> if (relay) RelayUnauthenticated else Unauthenticated
+            ProbeOutcome.ProxyUnauthenticated -> ProxyUnauthenticated
             ProbeOutcome.Refused -> Refused
             ProbeOutcome.Timeout -> Timeout
             ProbeOutcome.DnsFailure -> DnsFailure
@@ -147,6 +159,7 @@ sealed interface ConnectFailure {
             TransportFailure.CERTIFICATE_PIN -> CertificateChanged
             TransportFailure.TRUST_FENCE -> if (relay) PairingRequired else TrustFence
             TransportFailure.UNAUTHENTICATED -> if (relay) RelayUnauthenticated else Unauthenticated
+            TransportFailure.PROXY_UNAUTHENTICATED -> ProxyUnauthenticated
             TransportFailure.REFUSED -> Refused
             TransportFailure.TIMEOUT, TransportFailure.UNREACHABLE -> Timeout
             TransportFailure.DNS -> DnsFailure

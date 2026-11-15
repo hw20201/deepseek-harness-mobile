@@ -74,6 +74,8 @@ internal class UserDefaultsConnectStore(
         useTls: Boolean,
         description: HostDescription?,
         basePath: String,
+        proxyUsername: String?,
+        proxyPassword: String?,
     ): HostConfig = mutex.withLock {
         val existing = hostsState.value.firstOrNull { it.baseUrl == harnessBaseUrl(host, port, useTls, basePath) }
         val config = HostConfig(
@@ -89,6 +91,10 @@ internal class UserDefaultsConnectStore(
             relayFingerprint = existing?.relayFingerprint,
             relayDeviceId = existing?.relayDeviceId,
             relayTokenExpiresAt = existing?.relayTokenExpiresAt ?: 0L,
+            // The username is kept so the record says it has a proxy credential; the password
+            // has nowhere encrypted to go on iOS yet (no Keychain store for it), so a proxy
+            // host is remembered but cannot be connected to from here until one exists.
+            proxyUsername = proxyUsername ?: existing?.proxyUsername,
         )
         persist(listOf(config) + hostsState.value.filterNot { it.id == config.id || it.baseUrl == config.baseUrl })
         config

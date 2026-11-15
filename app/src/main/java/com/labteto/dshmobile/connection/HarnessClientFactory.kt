@@ -29,6 +29,7 @@ class HarnessClientFactory @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val credentials: RelayCredentialStore,
     private val sessions: HarnessSessionStore,
+    private val proxyCredentials: ProxyCredentialStore,
 ) {
     /**
      * Pinned clients, one per fingerprint.
@@ -54,6 +55,18 @@ class HarnessClientFactory @Inject constructor(
         if (config.isRelay) credentials.authorization(config.id) else null
 
     /**
+     * The reverse proxy's `Authorization` value for [config], or null when it has no proxy
+     * credential.
+     *
+     * Kept apart from [authorizationFor] on purpose: the relay's is a Bearer token and this one
+     * is Basic, and a request carries exactly one `Authorization` header. A relay host never has
+     * a proxy credential and a direct host never has a bearer token, so the two can never both
+     * apply — but the transports take both slots and let the relay's win if they ever did.
+     */
+    suspend fun proxyAuthorizationFor(config: HostConfig): String? =
+        if (config.isRelay || !config.hasProxyAuth) null else proxyCredentials.authorization(config.id)
+
+    /**
      * The harness browser session for [config], or null.
      *
      * Only for a direct connection. Behind a relay the relay holds the harness session and
@@ -68,8 +81,16 @@ class HarnessClientFactory @Inject constructor(
      *
      * [timeouts] is for probes; the live connection takes the transport's own 30s defaults, because
      * a long `session/page` on a big session is not a stalled request.
+     *
+     * [proxyAuthorization] is the reverse-proxy credential for *this* attempt, when the caller
+     * has one: it replaces the stored one, so correcting a wrong proxy password does not need
+     * the old one to work first. When it is null the stored credential is used.
      */
-    suspend fun clientFor(config: HostConfig, timeouts: ProbeTimeouts? = null): DshApiClient {
+    suspend fun clientFor(
+        config: HostConfig,
+        timeouts: ProbeTimeouts? = null,
+        proxyAuthorization: String? = null,
+    ): DshApiClient {
         val http = httpClient(config.relayFingerprint)
         val authorization = authorizationFor(config)
         val base = config.baseUrl
@@ -81,6 +102,7 @@ class HarnessClientFactory @Inject constructor(
                 readTimeoutMs = timeouts?.readMs ?: DEFAULT_TIMEOUT_MS,
                 authorization = authorization,
                 cookie = cookieFor(config),
+                proxyAuthorization = proxyAuthorization ?: proxyAuthorizationFor(config),
             ),
         )
     }
@@ -92,13 +114,14 @@ class HarnessClientFactory @Inject constructor(
      * connection loop builds a new one per attempt and closes it when the generation ends, while
      * the unary client outlives both.
      */
-    suspend fun muxFor(config: HostConfig): RemoteStreamMux {
+    suspend fun muxFor(config: HostConfig, proxyAuthorization: String? = null): RemoteStreamMux {
         val http = httpClient(config.relayFingerprint)
         val authorization = authorizationFor(config)
         val base = config.baseUrl
         val cookie = cookieFor(config)
+        val proxy = proxyAuthorization ?: proxyAuthorizationFor(config)
         return RemoteStreamMux { sink ->
-            WsChannel(com.labteto.dshmobile.core.wire.resolveHarnessUrl(base, REMOTE_STREAM_MUX_PATH).toString(), http, sink, authorization, cookie)
+            WsChannel(com.labteto.dshmobile.core.wire.resolveHarnessUrl(base, REMOTE_STREAM_MUX_PATH).toString(), http, sink, authorization, cookie, proxy)
         }
     }
 
@@ -108,12 +131,22 @@ class HarnessClientFactory @Inject constructor(
      * Deliberately unauthenticated: an address that has not been paired has no credential to send,
      * and a relay answers such a probe with the 403 that routes the user to pairing.
      */
-    fun anonymousClient(baseUrl: String, timeouts: ProbeTimeouts): DshApiClient = DshApiClient(
+    /**
+     * A client for an address nothing is remembered about yet — the LAN sweep and the manual field.
+     *
+     * Deliberately unauthenticated: an address that has not been paired has no credential to send,
+     * and a relay answers such a probe with the 403 that routes the user to pairing. The one
+     * exception is [proxyAuthorization]: a reverse-proxy credential typed into the manual form
+     * for this attempt, which the probe carries so a proxy in front of the harness lets it
+     * through to be probed at all.
+     */
+    fun anonymousClient(baseUrl: String, timeouts: ProbeTimeouts, proxyAuthorization: String? = null): DshApiClient = DshApiClient(
         transport = OkHttpRpcTransport(
             baseUrl = baseUrl,
             client = okHttpClient,
             connectTimeoutMs = timeouts.connectMs,
             readTimeoutMs = timeouts.readMs,
+            proxyAuthorization = proxyAuthorization,
         ),
     )
 

@@ -8,6 +8,7 @@ import com.labteto.dshmobile.connection.HostsStore
 import com.labteto.dshmobile.connection.MdnsDiscovery
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentials
 import com.labteto.dshmobile.core.wire.dto.HostDescription
 import com.labteto.dshmobile.termux.HarnessControl
 import com.labteto.dshmobile.termux.TermuxHarnessController
@@ -58,6 +59,8 @@ class AndroidConnectStore(private val hostsStore: HostsStore) : ConnectStore {
         useTls: Boolean,
         description: HostDescription?,
         basePath: String,
+        proxyUsername: String?,
+        proxyPassword: String?,
     ): HostConfig = hostsStore.rememberHost(
         name = name,
         host = host,
@@ -66,6 +69,8 @@ class AndroidConnectStore(private val hostsStore: HostsStore) : ConnectStore {
         useTls = useTls,
         description = description,
         basePath = basePath,
+        proxyUsername = proxyUsername,
+        proxyPassword = proxyPassword,
     )
 
     override suspend fun cacheDescription(id: String, description: HostDescription) =
@@ -104,7 +109,17 @@ class AndroidConnectNetwork(
         useTls: Boolean,
         config: HostConfig?,
         basePath: String,
-    ): ProbeOutcome = discovery.probeOutcome(host, port, timeouts, preflight, useTls, config, basePath)
+        proxy: ProxyCredentials?,
+    ): ProbeOutcome = discovery.probeOutcome(
+        host,
+        port,
+        timeouts,
+        preflight,
+        useTls,
+        config,
+        basePath,
+        proxyAuthorization = proxy?.takeIf { it.present }?.let { okhttp3.Credentials.basic(it.username, it.password) },
+    )
 
     override suspend fun scan(
         ports: List<Int>,
