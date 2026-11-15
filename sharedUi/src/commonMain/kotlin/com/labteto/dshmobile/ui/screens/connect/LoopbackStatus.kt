@@ -35,11 +35,13 @@ fun ProbeOutcome.toLoopbackStatus(): LoopbackStatus = when (this) {
     ProbeOutcome.Unauthenticated -> LoopbackStatus.NeedsSignIn
     ProbeOutcome.Refused, ProbeOutcome.Timeout, ProbeOutcome.Unreachable, ProbeOutcome.DnsFailure ->
         LoopbackStatus.Down(this)
-    // A loopback record is never a relay, so a relay-flavoured outcome here means the app's own
-    // bookkeeping is off; it is still "something answered that we cannot use".
+    // A loopback record is never a relay, and never behind a proxy, so a relay- or
+    // proxy-flavoured outcome here means the app's own bookkeeping is off; it is still
+    // "something answered that we cannot use".
     ProbeOutcome.TrustFence,
     ProbeOutcome.PairingRequired,
     ProbeOutcome.RelayUnauthenticated,
+    ProbeOutcome.ProxyUnauthenticated,
     ProbeOutcome.CertificateChanged,
     ProbeOutcome.NotAHarness,
     ProbeOutcome.TlsFailure,

@@ -6,6 +6,7 @@ import com.labteto.dshmobile.connection.DiscoveredHost
 import com.labteto.dshmobile.connection.HostConfig
 import com.labteto.dshmobile.connection.ProbeOutcome
 import com.labteto.dshmobile.connection.ProbeTimeouts
+import com.labteto.dshmobile.connection.ProxyCredentials
 import com.labteto.dshmobile.core.wire.SessionExchange
 import com.labteto.dshmobile.core.wire.dto.HostDescription
 import com.labteto.dshmobile.termux.HarnessControl
